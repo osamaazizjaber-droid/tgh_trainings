@@ -75,7 +75,7 @@ export default function AttendancePage() {
 
     const { data: existing } = await supabase.from('users').select('id').eq('phone', form.phone).maybeSingle();
     if (existing) {
-      setError(t('phone_registered_error'));
+      setError(t('phone_exists'));
       setSubmitting(false); return;
     }
 
@@ -95,7 +95,7 @@ export default function AttendancePage() {
       job_function: form.job_function.trim() || null,
     }).select().single();
 
-    if (userErr) { setError(t('registration_error')); setSubmitting(false); return; }
+    if (userErr) { setError(t('reg_error')); setSubmitting(false); return; }
 
     localStorage.setItem(USER_KEY, newUser.id);
     await supabase.from('attendance').insert({ user_id: newUser.id, training_id: trainingId, day_number: 1 });
