@@ -248,8 +248,8 @@ export default function AttendancePage() {
                 <label>{t('gender')} *</label>
                 <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
                   <option value="">{t('choose_option')}</option>
-                  <option value="Male">{t('male')}</option>
-                  <option value="Female">{t('female')}</option>
+                  <option value="male">{t('male')}</option>
+                  <option value="female">{t('female')}</option>
                 </select>
               </div>
               <div className="form-group">
