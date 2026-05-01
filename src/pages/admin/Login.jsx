@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useLanguage } from '../../lib/LanguageContext';
 import './Login.css';
 
 export default function AdminLogin() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,7 @@ export default function AdminLogin() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message === 'Invalid login credentials'
-        ? 'Invalid email or password. Please try again.'
+        ? t('invalid_credentials')
         : error.message
       );
     }
@@ -34,14 +36,10 @@ export default function AdminLogin() {
       <div className="login-card animate-slide-up">
         <div className="login-header">
           <div className="login-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-              <path d="M2 17l10 5 10-5"/>
-              <path d="M2 12l10 5 10-5"/>
-            </svg>
+            <img src="/logo.png" alt="TGH Logo" style={{ width: 64, height: 64, objectFit: 'contain' }} />
           </div>
-          <h1>Training Management</h1>
-          <p>Sign in to access the admin dashboard</p>
+          <h1 style={{ fontSize: '1.4rem' }}>{t('tgh_trainings_center')}</h1>
+          <p>{t('sign_in_desc')}</p>
         </div>
 
         <form onSubmit={handleLogin} className="login-form">
@@ -55,7 +53,7 @@ export default function AdminLogin() {
           )}
 
           <div className="form-group">
-            <label htmlFor="login-email">Email Address</label>
+            <label htmlFor="login-email">{t('email_address')}</label>
             <input
               id="login-email"
               type="email"
@@ -68,7 +66,7 @@ export default function AdminLogin() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="login-password">Password</label>
+            <label htmlFor="login-password">{t('password')}</label>
             <input
               id="login-password"
               type="password"
@@ -89,7 +87,7 @@ export default function AdminLogin() {
             {loading ? (
               <>
                 <span className="spinner spinner-sm" />
-                Signing in...
+                {t('signing_in')}
               </>
             ) : (
               <>
@@ -98,14 +96,14 @@ export default function AdminLogin() {
                   <polyline points="10 17 15 12 10 7"/>
                   <line x1="15" y1="12" x2="3" y2="12"/>
                 </svg>
-                Sign In
+                {t('sign_in')}
               </>
             )}
           </button>
         </form>
 
         <p className="login-footer">
-          Training Management System &copy; {new Date().getFullYear()}
+          TGH Trainings Center &copy; {new Date().getFullYear()}
         </p>
       </div>
     </div>

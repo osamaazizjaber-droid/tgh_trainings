@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useLanguage } from '../../lib/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts';
 
 export default function AdminAnalytics() {
+  const { t } = useLanguage();
   const [trainings, setTrainings] = useState([]);
   const [selectedId, setSelectedId] = useState('');
   const [attendance, setAttendance] = useState([]);
@@ -49,11 +51,11 @@ export default function AdminAnalytics() {
 
   // Build eval radar data
   const evalCategories = [
-    { label: 'Content', key: 'content_rating' },
-    { label: 'Trainer', key: 'trainer_rating' },
-    { label: 'Logistics', key: 'logistics_rating' },
-    { label: 'Materials', key: 'materials_rating' },
-    { label: 'Overall', key: 'overall_rating' },
+    { label: t('content_quality'), key: 'content_rating' },
+    { label: t('trainer_performance'), key: 'trainer_rating' },
+    { label: t('logistics'), key: 'logistics_rating' },
+    { label: t('materials'), key: 'materials_rating' },
+    { label: t('overall_rating'), key: 'overall_rating' },
   ];
   const evalChartData = evalCategories.map(({ label, key }) => {
     const vals = evaluations.map(e => e[key]).filter(Boolean);
@@ -71,30 +73,30 @@ export default function AdminAnalytics() {
     <div className="page-container animate-fade">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Analytics</h1>
-          <p className="text-muted" style={{ marginTop: 4 }}>Training performance insights</p>
+          <h1 className="page-title">{t('analytics')}</h1>
+          <p className="text-muted" style={{ marginTop: 4 }}>{t('training_performance_insights')}</p>
         </div>
         <div className="form-group" style={{ minWidth: 260 }}>
-          <label>Select Training</label>
+          <label>{t('select_training')}</label>
           <select value={selectedId} onChange={e => setSelectedId(e.target.value)}>
-            {trainings.map(t => (
-              <option key={t.id} value={t.id}>{t.activities?.name} — {t.title}</option>
+            {trainings.map(tr => (
+              <option key={tr.id} value={tr.id}>{tr.activities?.name} — {tr.title}</option>
             ))}
           </select>
         </div>
       </div>
 
       {!selectedId ? (
-        <div className="empty-state card"><h3>Select a training above</h3></div>
+        <div className="empty-state card"><h3>{t('select_training_above')}</h3></div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Attendance Chart */}
           <div className="card">
             <h3 className="card-title" style={{ marginBottom: 20 }}>
-              Attendance per Day <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>({attendance.length} total records)</span>
+              {t('attendance_per_day')} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>({attendance.length} {t('total_records')})</span>
             </h3>
             {attByDay.every(d => d.count === 0) ? (
-              <div className="empty-state"><div className="empty-state-icon">📊</div><h3>No attendance data yet</h3></div>
+              <div className="empty-state"><div className="empty-state-icon">📊</div><h3>{t('no_attendance_data')}</h3></div>
             ) : (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={attByDay} {...tooltipStyle}>
@@ -102,7 +104,7 @@ export default function AdminAnalytics() {
                   <XAxis dataKey="day" stroke="#8b8ba8" fontSize={12} />
                   <YAxis stroke="#8b8ba8" fontSize={12} allowDecimals={false} />
                   <Tooltip {...tooltipStyle} />
-                  <Bar dataKey="count" name="Attendees" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" name={t('attendees')} fill="#6366f1" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -112,7 +114,7 @@ export default function AdminAnalytics() {
           {testChartData.length > 0 && (
             <div className="card">
               <h3 className="card-title" style={{ marginBottom: 20 }}>
-                Pre vs Post Test Scores (%)
+                {t('pre_vs_post_scores')}
               </h3>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={testChartData}>
@@ -121,8 +123,8 @@ export default function AdminAnalytics() {
                   <YAxis stroke="#8b8ba8" fontSize={12} domain={[0, 100]} />
                   <Tooltip {...tooltipStyle} formatter={(v) => `${v}%`} />
                   <Legend />
-                  <Bar dataKey="pre" name="Pre-Test %" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="post" name="Post-Test %" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="pre" name={`${t('pre_test')} %`} fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="post" name={`${t('post_test')} %`} fill="#10b981" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -132,7 +134,7 @@ export default function AdminAnalytics() {
           {evaluations.length > 0 && (
             <div className="card">
               <h3 className="card-title" style={{ marginBottom: 20 }}>
-                Evaluation Averages <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>({evaluations.length} responses)</span>
+                {t('evaluation_averages')} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>({evaluations.length} {t('responses')})</span>
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'center' }}>
                 <ResponsiveContainer width="100%" height={280}>

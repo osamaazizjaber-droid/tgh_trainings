@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useLanguage } from '../../lib/LanguageContext';
 
 const USER_KEY = 'tms_user_id';
 
@@ -8,6 +9,7 @@ const checkExpiry = (t) => t?.qr_expires_at && new Date(t.qr_expires_at) > new D
 
 // Shared test page factory used by both PreTest and PostTest
 export function TestPage({ testType }) {
+  const { t, language, toggleLanguage } = useLanguage();
   const [params] = useSearchParams();
   const trainingId = params.get('trainingId');
 
@@ -19,9 +21,10 @@ export function TestPage({ testType }) {
   const [userId, setUserId] = useState(null);
   const [score, setScore] = useState(null);
   const [maxScore, setMaxScore] = useState(null);
+  const [error, setError] = useState('');
 
   const isPreTest = testType === 'pre';
-  const label = isPreTest ? 'القبلي' : 'البعدي';
+  const label = isPreTest ? t('pre_test') : t('post_test');
 
   useEffect(() => {
     if (!trainingId) { setPhase('error'); return; }
@@ -38,7 +41,6 @@ export function TestPage({ testType }) {
     if (!uid) { setPhase('nouser'); return; }
     setUserId(uid);
 
-    // Check if already submitted
     const { data: qs } = await supabase.from('questions').select('id').eq('training_id', trainingId).eq('type', testType);
     if (!qs?.length) { setPhase('noquestions'); return; }
 
@@ -46,7 +48,6 @@ export function TestPage({ testType }) {
       .select('id').eq('user_id', uid).eq('question_id', qs[0].id).maybeSingle();
     if (existing) { setPhase('already'); return; }
 
-    // Load full questions + choices
     const { data: fullQs } = await supabase.from('questions')
       .select('*, choices(*)')
       .eq('training_id', trainingId)
@@ -54,7 +55,7 @@ export function TestPage({ testType }) {
       .order('order_num');
 
     setQuestions(fullQs || []);
-    setPhase('test');
+    setPhase('form');
   };
 
   const handleSelect = (qId, choiceId) => {
@@ -65,13 +66,13 @@ export function TestPage({ testType }) {
     setAnswers(prev => ({ ...prev, [qId]: { text } }));
   };
 
-  const handleSubmit = async () => {
-    // Validate all MCQ answered
-    const unanswered = questions.filter(q => q.question_type === 'mcq' && !answers[q.id]?.choiceId);
-    if (unanswered.length) {
-      alert(`يرجى الإجابة على جميع أسئلة الاختيار من متعدد (${unanswered.length} سؤال متبقٍ)`);
+  const submitTest = async () => {
+    const missingMCQ = questions.some(q => q.question_type === 'mcq' && !answers[q.id]?.choiceId);
+    if (missingMCQ) {
+      setError(t('answer_all_mcq'));
       return;
     }
+    setError('');
 
     setSubmitting(true);
     const rows = questions.map(q => ({
@@ -83,7 +84,6 @@ export function TestPage({ testType }) {
 
     await supabase.from('answers').insert(rows);
 
-    // Calculate score
     let earned = 0, total = 0;
     questions.forEach(q => {
       if (q.question_type === 'mcq') {
@@ -103,9 +103,16 @@ export function TestPage({ testType }) {
     <div className="attendee-page">
       <div className="attendee-card">
         <div className="attendee-logo">
-          <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>{isPreTest ? '📝' : '📊'}</div>
-          <h1>{training?.title || 'الاختبار'}</h1>
-          <p>الاختبار {label}</p>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <img src="/logo.png" alt="TGH Logo" style={{ width: 80, height: 80, objectFit: 'contain' }} />
+          </div>
+          <div style={{ position: 'absolute', top: 16, right: language === 'ar' ? 'auto' : 16, left: language === 'ar' ? 16 : 'auto' }}>
+            <button onClick={toggleLanguage} className="btn btn-ghost btn-sm">
+              {language === 'en' ? 'العربية' : 'English'}
+            </button>
+          </div>
+          <h1>{t('tgh_trainings_center')}</h1>
+          <p>{training?.title || label}</p>
         </div>
 
         {phase === 'loading' && (
@@ -115,39 +122,39 @@ export function TestPage({ testType }) {
         {phase === 'expired' && (
           <div className="alert alert-error" style={{ flexDirection: 'column', textAlign: 'center', padding: 32 }}>
             <div style={{ fontSize: '2rem', marginBottom: 8 }}>⚠️</div>
-            <strong>رمز QR منتهي الصلاحية</strong>
-            <p style={{ marginTop: 8, opacity: 0.8 }}>تواصل مع المنظمين لتجديد الرمز.</p>
+            <strong>{t('qr_expired')}</strong>
+            <p style={{ marginTop: 8, opacity: 0.8 }}>{t('qr_expired_desc')}</p>
           </div>
         )}
 
         {phase === 'nouser' && (
           <div className="alert alert-warning" style={{ flexDirection: 'column', textAlign: 'center', padding: 32 }}>
             <div style={{ fontSize: '2rem', marginBottom: 8 }}>👤</div>
-            <strong>يرجى تسجيل الحضور أولاً</strong>
-            <p style={{ marginTop: 8, opacity: 0.8 }}>امسح رمز الحضور قبل الاختبار.</p>
+            <strong>{t('please_register_first')}</strong>
+            <p style={{ marginTop: 8, opacity: 0.8 }}>{t('scan_attendance_first')}</p>
           </div>
         )}
 
         {phase === 'noquestions' && (
           <div className="alert alert-info" style={{ flexDirection: 'column', textAlign: 'center', padding: 32 }}>
             <div style={{ fontSize: '2rem', marginBottom: 8 }}>📭</div>
-            <strong>لا توجد أسئلة بعد</strong>
-            <p style={{ marginTop: 8, opacity: 0.8 }}>سيتم إضافة الأسئلة قريباً.</p>
+            <strong>{t('no_questions_yet')}</strong>
+            <p style={{ marginTop: 8, opacity: 0.8 }}>{t('no_questions_desc')}</p>
           </div>
         )}
 
         {phase === 'already' && (
           <div style={{ textAlign: 'center', padding: 32 }}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>✅</div>
-            <h2 style={{ color: 'var(--success)' }}>تم تقديم الاختبار مسبقاً</h2>
-            <p style={{ color: 'var(--text-secondary)', marginTop: 8 }}>لا يمكن تقديم الاختبار {label} أكثر من مرة.</p>
+            <h2 style={{ color: 'var(--success)' }}>{t('test_submitted_already')}</h2>
+            <p style={{ color: 'var(--text-secondary)', marginTop: 8 }}>{t('test_submitted_already_desc')}</p>
           </div>
         )}
 
         {phase === 'done' && (
           <div style={{ textAlign: 'center', padding: 32 }}>
             <div style={{ fontSize: '3rem', marginBottom: 12 }}>🎉</div>
-            <h2 style={{ color: 'var(--success)', marginBottom: 8 }}>تم تقديم الاختبار!</h2>
+            <h2 style={{ color: 'var(--success)', marginBottom: 8 }}>{t('test_success')}</h2>
             {maxScore > 0 && (
               <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', padding: '20px 32px', display: 'inline-block', marginTop: 16 }}>
                 <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary-light)' }}>{score}/{maxScore}</div>
@@ -159,18 +166,20 @@ export function TestPage({ testType }) {
           </div>
         )}
 
-        {phase === 'test' && (
-          <div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: 20, textAlign: 'center' }}>
-              {questions.length} سؤال — إجمالي النقاط: {questions.reduce((s, q) => s + q.points, 0)}
-            </p>
+        {phase === 'form' && (
+          <div className="animate-fade">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottom: '1px solid var(--border)', paddingBottom: 16 }}>
+              <h2 style={{ margin: 0 }}>{label}</h2>
+              <span className="badge badge-purple">{questions.reduce((a, q) => a + (q.points || 0), 0)} {t('points')}</span>
+            </div>
+            {error && <div className="alert alert-error mb-4">{error}</div>}
             {questions.map((q, i) => (
               <div key={q.id} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <p style={{ fontWeight: 600, lineHeight: 1.5, flex: 1 }}>
                     {i + 1}. {q.question_text}
                   </p>
-                  <span className="badge badge-purple" style={{ marginRight: 8, flexShrink: 0 }}>{q.points} نقطة</span>
+                  <span className="badge badge-purple" style={{ marginRight: 8, flexShrink: 0 }}>{q.points} {t('points')}</span>
                 </div>
 
                 {q.question_type === 'mcq' ? (
@@ -195,7 +204,7 @@ export function TestPage({ testType }) {
                   </div>
                 ) : (
                   <textarea
-                    placeholder="اكتب إجابتك هنا..."
+                    placeholder={t('write_your_answer_here')}
                     value={answers[q.id]?.text || ''}
                     onChange={e => handleText(q.id, e.target.value)}
                     rows={3}
@@ -206,11 +215,10 @@ export function TestPage({ testType }) {
 
             <button
               className="btn btn-primary w-full btn-lg"
-              onClick={handleSubmit}
+              onClick={submitTest}
               disabled={submitting}
-              style={{ marginTop: 8 }}
             >
-              {submitting ? <><span className="spinner spinner-sm" /> جاري الإرسال...</> : '✓ تقديم الاختبار'}
+              {submitting ? <><span className="spinner spinner-sm" /> {t('loading')}</> : t('submit_test')}
             </button>
           </div>
         )}

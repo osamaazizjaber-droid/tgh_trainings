@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import { supabase } from '../../lib/supabase';
 import { format, addDays } from 'date-fns';
+import { useLanguage } from '../../lib/LanguageContext';
 import { exportAttendance, exportTestResults, exportEvaluations, exportAll } from '../../lib/export';
 
 const BASE_URL = window.location.origin;
@@ -27,9 +28,9 @@ const QRPanel = ({ trainingId, type, label, color }) => {
         <QRCodeCanvas value={url} size={140} />
       </div>
       <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <button className="btn btn-secondary btn-sm" onClick={download}>⬇ Download PNG</button>
+        <button className="btn btn-secondary btn-sm" onClick={download}>⬇ Download</button>
         <a href={url} target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm" style={{ fontSize: '0.72rem' }}>
-          🔗 Open Link
+          🔗 Link
         </a>
       </div>
     </div>
@@ -37,6 +38,7 @@ const QRPanel = ({ trainingId, type, label, color }) => {
 };
 
 export default function AdminTrainingDetail() {
+  const { t } = useLanguage();
   const { id } = useParams();
   const [training, setTraining] = useState(null);
   const [attendance, setAttendance] = useState([]);
@@ -63,9 +65,9 @@ export default function AdminTrainingDetail() {
     setLoading(true);
     const [{ data: t }, { data: att }, { data: q }, { data: ev }, { data: tr }] = await Promise.all([
       supabase.from('trainings').select('*, activities(name, projects(name))').eq('id', id).single(),
-      supabase.from('attendance').select('*, users(name, phone, gender, age, governorate, district)').eq('training_id', id).order('day_number'),
+      supabase.from('attendance').select('*, users(first_name, second_name, third_name, fourth_name, phone, gender, age, governorate, district, subdistrict, village, representation, job_function)').eq('training_id', id).order('day_number'),
       supabase.from('questions').select('*, choices(*)').eq('training_id', id).order('order_num'),
-      supabase.from('evaluations').select('*, users(name, phone)').eq('training_id', id),
+      supabase.from('evaluations').select('*, users(first_name, second_name, third_name, fourth_name, phone, representation, job_function)').eq('training_id', id),
       supabase.from('test_score_comparison').select('*').eq('training_id', id),
     ]);
     setTraining(t);
@@ -126,14 +128,14 @@ export default function AdminTrainingDetail() {
   const isExpired = training?.qr_expires_at ? new Date(training.qr_expires_at) < new Date() : true;
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
-  if (!training) return <div className="page-container"><p>Training not found.</p></div>;
+  if (!training) return <div className="page-container"><p>{t('error')}</p></div>;
 
   const tabs = [
-    { key: 'overview', label: 'Overview & QR' },
-    { key: 'attendance', label: `Attendance (${attendance.length})` },
-    training.has_pre_test || training.has_post_test ? { key: 'tests', label: `Test Results (${testResults.length})` } : null,
-    training.has_evaluation ? { key: 'evaluations', label: `Evaluations (${evaluations.length})` } : null,
-    training.has_pre_test || training.has_post_test ? { key: 'questions', label: `Questions (${questions.length})` } : null,
+    { key: 'overview', label: t('features') },
+    { key: 'attendance', label: `${t('attendance')} (${attendance.length})` },
+    training.has_pre_test || training.has_post_test ? { key: 'tests', label: `${t('test')} (${testResults.length})` } : null,
+    training.has_evaluation ? { key: 'evaluations', label: `${t('evaluation')} (${evaluations.length})` } : null,
+    training.has_pre_test || training.has_post_test ? { key: 'questions', label: `${t('questions')} (${questions.length})` } : null,
   ].filter(Boolean);
 
   const preQs = questions.filter(q => q.type === 'pre');
@@ -143,6 +145,17 @@ export default function AdminTrainingDetail() {
     const vals = evaluations.map(e => e[field]).filter(Boolean);
     return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : '—';
   };
+
+  const uniqueAttendees = [];
+  const seenPhones = new Set();
+  attendance.forEach(a => {
+    if (a.users && !seenPhones.has(a.users.phone)) {
+      seenPhones.add(a.users.phone);
+      uniqueAttendees.push(a.users);
+    }
+  });
+  const maleCount = uniqueAttendees.filter(u => u.gender?.toLowerCase() === 'male').length;
+  const femaleCount = uniqueAttendees.filter(u => u.gender?.toLowerCase() === 'female').length;
 
   return (
     <div className="page-container animate-fade">
@@ -156,7 +169,7 @@ export default function AdminTrainingDetail() {
             </span>
           </div>
           <h1 className="page-title">{training.title}</h1>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <span className="badge badge-purple">{training.days_count} Days</span>
             {training.has_pre_test && <span className="badge badge-info">Pre-Test</span>}
             {training.has_post_test && <span className="badge badge-info">Post-Test</span>}
@@ -164,11 +177,15 @@ export default function AdminTrainingDetail() {
             <span className={`badge ${isExpired ? 'badge-danger' : 'badge-success'}`}>
               QR {isExpired ? 'Expired' : 'Active'}
             </span>
+            <div style={{ flex: 1 }}></div>
+            <span className="badge badge-gray" style={{ fontSize: '0.85rem' }}>
+              👥 {uniqueAttendees.length} Total (♂ {maleCount} | ♀ {femaleCount})
+            </span>
           </div>
         </div>
         <button
           className="btn btn-success"
-          onClick={() => exportAll({ attendance, testResults, evaluations }, training.title)}
+          onClick={() => exportAll({ attendance, testResults, evaluations }, training.title, t)}
         >
           ⬇ Export All
         </button>
@@ -176,19 +193,19 @@ export default function AdminTrainingDetail() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)', marginBottom: 24, overflowX: 'auto' }}>
-        {tabs.map(t => (
+        {tabs.map(tabItem => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tabItem.key}
+            onClick={() => setTab(tabItem.key)}
             style={{
               padding: '10px 16px', border: 'none', background: 'none', cursor: 'pointer',
-              color: tab === t.key ? 'var(--primary-light)' : 'var(--text-secondary)',
-              fontWeight: tab === t.key ? 700 : 500, fontSize: '0.9rem',
-              borderBottom: tab === t.key ? '2px solid var(--primary)' : '2px solid transparent',
+              color: tab === tabItem.key ? 'var(--primary-light)' : 'var(--text-secondary)',
+              fontWeight: tab === tabItem.key ? 700 : 500, fontSize: '0.9rem',
+              borderBottom: tab === tabItem.key ? '2px solid var(--primary)' : '2px solid transparent',
               whiteSpace: 'nowrap', transition: 'all 0.2s', fontFamily: 'inherit',
             }}
           >
-            {t.label}
+            {tabItem.label}
           </button>
         ))}
       </div>
@@ -227,10 +244,10 @@ export default function AdminTrainingDetail() {
           <div className="card">
             <h3 className="card-title" style={{ marginBottom: 16 }}>QR Codes</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-              <QRPanel trainingId={id} type="attendance" label="Attendance" color="var(--primary-light)" />
-              {training.has_pre_test && <QRPanel trainingId={id} type="pretest" label="Pre-Test" color="var(--info)" />}
-              {training.has_post_test && <QRPanel trainingId={id} type="posttest" label="Post-Test" color="var(--secondary)" />}
-              {training.has_evaluation && <QRPanel trainingId={id} type="evaluation" label="Evaluation" color="var(--success)" />}
+              <QRPanel trainingId={id} type="attendance" label={t('attendance')} color="var(--primary-light)" />
+              {training.has_pre_test && <QRPanel trainingId={id} type="pretest" label={t('pre_test')} color="var(--info)" />}
+              {training.has_post_test && <QRPanel trainingId={id} type="posttest" label={t('post_test')} color="var(--warning)" />}
+              {training.has_evaluation && <QRPanel trainingId={id} type="evaluation" label={t('evaluation')} color="var(--success)" />}
             </div>
           </div>
         </div>
@@ -241,7 +258,7 @@ export default function AdminTrainingDetail() {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">Attendance Records</h3>
-            <button className="btn btn-success btn-sm" onClick={() => exportAttendance(attendance, training.title)}>
+            <button className="btn btn-success btn-sm" onClick={() => exportAttendance(attendance, training.title, t)}>
               ⬇ Export Excel
             </button>
           </div>
@@ -252,22 +269,31 @@ export default function AdminTrainingDetail() {
               <table>
                 <thead>
                   <tr>
-                    <th>Name</th><th>Phone</th><th>Gender</th><th>Age</th>
-                    <th>Governorate</th><th>Day</th><th>Date</th>
+                    <th>Full Name</th><th>Phone</th><th>Gender</th><th>Age</th>
+                    <th>Governorate</th><th>District</th><th>Subdistrict</th><th>Village</th>
+                    <th>Representation</th><th>Function</th><th>Day</th><th>Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {attendance.map(a => (
+                  {attendance.map(a => {
+                    const u = a.users;
+                    const name = [u?.first_name, u?.second_name, u?.third_name, u?.fourth_name].filter(Boolean).join(' ');
+                    return (
                     <tr key={a.id}>
-                      <td style={{ fontWeight: 600 }}>{a.users?.name}</td>
-                      <td className="text-muted">{a.users?.phone}</td>
-                      <td>{a.users?.gender === 'male' ? '♂ Male' : '♀ Female'}</td>
-                      <td>{a.users?.age}</td>
-                      <td>{a.users?.governorate}</td>
+                      <td style={{ fontWeight: 600 }}>{name}</td>
+                      <td className="text-muted">{u?.phone}</td>
+                      <td>{u?.gender?.toLowerCase() === 'male' ? '♂ Male' : '♀ Female'}</td>
+                      <td>{u?.age}</td>
+                      <td>{u?.governorate}</td>
+                      <td className="text-muted" style={{ fontSize: '0.82rem' }}>{u?.district || '—'}</td>
+                      <td className="text-muted" style={{ fontSize: '0.82rem' }}>{u?.subdistrict || '—'}</td>
+                      <td className="text-muted" style={{ fontSize: '0.82rem' }}>{u?.village || '—'}</td>
+                      <td className="text-muted" style={{ fontSize: '0.82rem' }}>{u?.representation || '—'}</td>
+                      <td className="text-muted" style={{ fontSize: '0.82rem' }}>{u?.job_function || '—'}</td>
                       <td><span className="badge badge-purple">Day {a.day_number}</span></td>
                       <td className="text-muted">{a.date}</td>
                     </tr>
-                  ))}
+                  );})}
                 </tbody>
               </table>
             </div>
@@ -280,7 +306,7 @@ export default function AdminTrainingDetail() {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">Pre vs Post Test Results</h3>
-            <button className="btn btn-success btn-sm" onClick={() => exportTestResults(testResults, training.title)}>
+            <button className="btn btn-success btn-sm" onClick={() => exportTestResults(testResults, training.title, t)}>
               ⬇ Export Excel
             </button>
           </div>
@@ -351,7 +377,7 @@ export default function AdminTrainingDetail() {
           <div className="card">
             <div className="card-header">
               <h3 className="card-title">All Evaluations</h3>
-              <button className="btn btn-success btn-sm" onClick={() => exportEvaluations(evaluations, training.title)}>⬇ Export</button>
+              <button className="btn btn-success btn-sm" onClick={() => exportEvaluations(evaluations, training.title, t)}>⬇ Export</button>
             </div>
             {evaluations.length === 0 ? (
               <div className="empty-state"><div className="empty-state-icon">⭐</div><h3>No evaluations yet</h3></div>
@@ -364,13 +390,22 @@ export default function AdminTrainingDetail() {
                   <tbody>
                     {evaluations.map(e => (
                       <tr key={e.id}>
-                        <td style={{ fontWeight: 600 }}>{e.users?.name}</td>
+                        <td style={{ fontWeight: 600 }}>{[e.users?.first_name, e.users?.second_name, e.users?.third_name, e.users?.fourth_name].filter(Boolean).join(' ')}</td>
                         <td>{'⭐'.repeat(e.content_rating || 0)}</td>
                         <td>{'⭐'.repeat(e.trainer_rating || 0)}</td>
                         <td>{'⭐'.repeat(e.logistics_rating || 0)}</td>
                         <td>{'⭐'.repeat(e.materials_rating || 0)}</td>
                         <td>{'⭐'.repeat(e.overall_rating || 0)}</td>
-                        <td className="text-muted" style={{ maxWidth: 200, fontSize: '0.8rem' }}>{e.comments || '—'}</td>
+                        <td className="text-muted" style={{ maxWidth: 200, fontSize: '0.8rem' }}>
+                          {[
+                            e.content_comment ? `المحتوى: ${e.content_comment}` : null,
+                            e.trainer_comment ? `المدرب: ${e.trainer_comment}` : null,
+                            e.logistics_comment ? `اللوجستيات: ${e.logistics_comment}` : null,
+                            e.materials_comment ? `المواد: ${e.materials_comment}` : null,
+                            e.overall_comment ? `عام: ${e.overall_comment}` : null,
+                            e.comments ? `إضافي: ${e.comments}` : null
+                          ].filter(Boolean).join(' | ') || '—'}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { useLanguage } from '../../lib/LanguageContext';
 
 const emptyProject = { name: '', description: '' };
 const emptyActivity = { name: '' };
 const emptyTraining = {
   title: '',
-  days_count: 2,
+  days_count: 1,
   has_pre_test: false,
   has_post_test: false,
   has_evaluation: true,
 };
 
 export default function AdminProjects() {
+  const { t } = useLanguage();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -156,21 +158,21 @@ export default function AdminProjects() {
   };
 
   if (loading) {
-    return <div className="loading-screen"><div className="spinner" /><span>Loading projects...</span></div>;
+    return <div className="loading-screen"><div className="spinner" /><span>{t('loading')}</span></div>;
   }
 
   return (
     <div className="page-container animate-fade">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Projects</h1>
+          <h1 className="page-title">{t('projects')}</h1>
           <p className="text-muted" style={{ marginTop: 4 }}>Manage projects, activities, and trainings</p>
         </div>
         <button className="btn btn-primary" onClick={openNewProject}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Project
+          {t('new_project')}
         </button>
       </div>
 
@@ -180,7 +182,7 @@ export default function AdminProjects() {
           <h3>No projects yet</h3>
           <p>Create your first project to start managing trainings.</p>
           <button className="btn btn-primary" onClick={openNewProject} style={{ marginTop: 16 }}>
-            Create Project
+            {t('new_project')}
           </button>
         </div>
       ) : (
@@ -204,10 +206,10 @@ export default function AdminProjects() {
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-secondary btn-sm" onClick={() => openEditProject(project)}>Edit</button>
-                  <button className="btn btn-danger btn-sm" onClick={() => setDeleteTarget({ type: 'project', id: project.id, name: project.name })}>Delete</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => openEditProject(project)}>{t('edit')}</button>
+                  <button className="btn btn-danger btn-sm" onClick={() => setDeleteTarget({ type: 'project', id: project.id, name: project.name })}>{t('delete')}</button>
                   <button className="btn btn-primary btn-sm" onClick={() => openNewActivity(project.id)}>
-                    + Activity
+                    + {t('add_activity')}
                   </button>
                 </div>
               </div>
@@ -230,10 +232,10 @@ export default function AdminProjects() {
                           </span>
                         </h3>
                         <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn btn-ghost btn-sm" onClick={() => openEditActivity(activity, project.id)}>Edit</button>
-                          <button className="btn btn-danger btn-sm" onClick={() => setDeleteTarget({ type: 'activity', id: activity.id, name: activity.name })}>Delete</button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => openEditActivity(activity, project.id)}>{t('edit')}</button>
+                          <button className="btn btn-danger btn-sm" onClick={() => setDeleteTarget({ type: 'activity', id: activity.id, name: activity.name })}>{t('delete')}</button>
                           <button className="btn btn-secondary btn-sm" onClick={() => openNewTraining(activity.id, project.id)}>
-                            + Training
+                            + {t('training')}
                           </button>
                         </div>
                       </div>
@@ -255,24 +257,24 @@ export default function AdminProjects() {
                                 <div>
                                   <div style={{ fontWeight: 600, marginBottom: 6 }}>{training.title}</div>
                                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
-                                    <span className="badge badge-purple">{training.days_count}d</span>
-                                    {training.has_pre_test && <span className="badge badge-info">Pre</span>}
-                                    {training.has_post_test && <span className="badge badge-info">Post</span>}
-                                    {training.has_evaluation && <span className="badge badge-success">Eval</span>}
+                                    <span className="badge badge-purple">{training.days_count}{t('days')}</span>
+                                    {training.has_pre_test && <span className="badge badge-info">{t('pre_test')}</span>}
+                                    {training.has_post_test && <span className="badge badge-info">{t('post_test')}</span>}
+                                    {training.has_evaluation && <span className="badge badge-success">{t('eval')}</span>}
                                   </div>
                                   <span className={`badge ${isExpired(training.qr_expires_at) ? 'badge-danger' : 'badge-success'}`} style={{ fontSize: '0.7rem' }}>
-                                    QR {isExpired(training.qr_expires_at) ? 'Expired' : 'Active'}
+                                    QR {isExpired(training.qr_expires_at) ? t('expired') : t('active')}
                                   </span>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
                                   <Link to={`/admin/trainings/${training.id}`} className="btn btn-primary btn-sm">
-                                    Manage
+                                    {t('manage')}
                                   </Link>
                                   <button
                                     className="btn btn-danger btn-sm"
                                     onClick={() => setDeleteTarget({ type: 'training', id: training.id, name: training.title })}
                                   >
-                                    Delete
+                                    {t('delete')}
                                   </button>
                                 </div>
                               </div>
@@ -294,16 +296,16 @@ export default function AdminProjects() {
         <div className="modal-overlay" onClick={() => setShowProjectModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">{editingProject ? 'Edit Project' : 'New Project'}</h3>
+              <h3 className="modal-title">{editingProject ? t('edit') : t('new_project')}</h3>
               <button className="btn btn-ghost btn-icon" onClick={() => setShowProjectModal(false)}>✕</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="form-group">
-                <label>Project Name *</label>
+                <label>{t('project_name')} *</label>
                 <input
                   value={projectForm.name}
                   onChange={(e) => setProjectForm({ ...projectForm, name: e.target.value })}
-                  placeholder="e.g. Community Health Initiative"
+                  placeholder="e.g. KU50"
                 />
               </div>
               <div className="form-group">
@@ -316,9 +318,9 @@ export default function AdminProjects() {
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setShowProjectModal(false)}>Cancel</button>
+              <button className="btn btn-ghost" onClick={() => setShowProjectModal(false)}>{t('cancel')}</button>
               <button className="btn btn-primary" onClick={saveProject} disabled={projectSaving || !projectForm.name.trim()}>
-                {projectSaving ? <><span className="spinner spinner-sm" /> Saving...</> : 'Save Project'}
+                {projectSaving ? <><span className="spinner spinner-sm" /> {t('save')}...</> : t('save')}
               </button>
             </div>
           </div>
@@ -330,21 +332,21 @@ export default function AdminProjects() {
         <div className="modal-overlay" onClick={() => setShowActivityModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">{editingActivity ? 'Edit Activity' : 'New Activity'}</h3>
+              <h3 className="modal-title">{editingActivity ? t('edit') : t('add_activity')}</h3>
               <button className="btn btn-ghost btn-icon" onClick={() => setShowActivityModal(false)}>✕</button>
             </div>
             <div className="form-group">
-              <label>Activity Name *</label>
+              <label>{t('activity_name')} *</label>
               <input
                 value={activityForm.name}
                 onChange={(e) => setActivityForm({ name: e.target.value })}
-                placeholder="e.g. First Aid Training"
+                placeholder="e.g. Life Skills Trainings and Football Activities"
               />
             </div>
             <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setShowActivityModal(false)}>Cancel</button>
+              <button className="btn btn-ghost" onClick={() => setShowActivityModal(false)}>{t('cancel')}</button>
               <button className="btn btn-primary" onClick={saveActivity} disabled={activitySaving || !activityForm.name.trim()}>
-                {activitySaving ? <><span className="spinner spinner-sm" /> Saving...</> : 'Save Activity'}
+                {activitySaving ? <><span className="spinner spinner-sm" /> {t('save')}...</> : t('save')}
               </button>
             </div>
           </div>
@@ -356,26 +358,27 @@ export default function AdminProjects() {
         <div className="modal-overlay" onClick={() => setShowTrainingModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">New Training</h3>
+              <h3 className="modal-title">{t('new_training')}</h3>
               <button className="btn btn-ghost btn-icon" onClick={() => setShowTrainingModal(false)}>✕</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="form-group">
-                <label>Training Title *</label>
+                <label>{t('training_title')} *</label>
                 <input
                   value={trainingForm.title}
                   onChange={(e) => setTrainingForm({ ...trainingForm, title: e.target.value })}
-                  placeholder="e.g. Basic Life Support – Batch 1"
+                  placeholder="e.g. Life Skills Training - Batch 1"
                 />
               </div>
               <div className="form-group">
-                <label>Number of Days</label>
+                <label>{t('number_of_days')}</label>
                 <select
                   value={trainingForm.days_count}
                   onChange={(e) => setTrainingForm({ ...trainingForm, days_count: parseInt(e.target.value) })}
                 >
-                  <option value={2}>2 Days</option>
-                  <option value={3}>3 Days</option>
+                  {[1,2,3,4,5,6,7,8,9,10].map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
                 </select>
               </div>
               <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: 16 }}>
@@ -398,9 +401,9 @@ export default function AdminProjects() {
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setShowTrainingModal(false)}>Cancel</button>
+              <button className="btn btn-ghost" onClick={() => setShowTrainingModal(false)}>{t('cancel')}</button>
               <button className="btn btn-primary" onClick={saveTraining} disabled={trainingSaving || !trainingForm.title.trim()}>
-                {trainingSaving ? <><span className="spinner spinner-sm" /> Saving...</> : 'Create Training'}
+                {trainingSaving ? <><span className="spinner spinner-sm" /> {t('save')}...</> : t('save')}
               </button>
             </div>
           </div>
@@ -412,20 +415,14 @@ export default function AdminProjects() {
         <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
           <div className="modal" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title" style={{ color: 'var(--danger)' }}>⚠ Confirm Delete</h3>
+              <h3 className="modal-title" style={{ color: 'var(--danger)' }}>⚠ {t('delete_confirm')}</h3>
               <button className="btn btn-ghost btn-icon" onClick={() => setDeleteTarget(null)}>✕</button>
             </div>
             <p style={{ color: 'var(--text-secondary)' }}>
-              Are you sure you want to delete <strong style={{ color: 'var(--text-primary)' }}>{deleteTarget.name}</strong>?
-              This action cannot be undone.
+              {t('delete_warning')} <strong style={{ color: 'var(--text-primary)' }}>{deleteTarget.name}</strong>
             </p>
-            {deleteTarget.type === 'project' && (
-              <p className="alert alert-error" style={{ marginTop: 12 }}>
-                This will also delete all activities and trainings inside this project.
-              </p>
-            )}
             <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setDeleteTarget(null)}>Cancel</button>
+              <button className="btn btn-ghost" onClick={() => setDeleteTarget(null)}>{t('cancel')}</button>
               <button
                 className="btn btn-danger"
                 onClick={() => {
@@ -434,7 +431,7 @@ export default function AdminProjects() {
                   if (deleteTarget.type === 'training') deleteTraining(deleteTarget.id);
                 }}
               >
-                Delete
+                {t('delete')}
               </button>
             </div>
           </div>
