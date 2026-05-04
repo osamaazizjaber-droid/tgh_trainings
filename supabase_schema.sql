@@ -26,11 +26,23 @@ create table if not exists activities (
 );
 
 -- ================================================================
+-- 2.5 TRAINERS (Custom Auth Table)
+-- ================================================================
+create table if not exists trainers (
+  id uuid primary key default gen_random_uuid(),
+  username text unique not null,
+  password text not null,
+  full_name text not null,
+  created_at timestamptz default now()
+);
+
+-- ================================================================
 -- 3. TRAININGS
 -- ================================================================
 create table if not exists trainings (
   id uuid primary key default gen_random_uuid(),
   activity_id uuid references activities(id) on delete cascade not null,
+  trainer_id uuid references trainers(id) on delete set null,
   title text not null,
   days_count int default 1 check (days_count between 1 and 10),
   has_pre_test boolean default false,
@@ -139,6 +151,7 @@ create table if not exists evaluations (
 -- ================================================================
 alter table projects enable row level security;
 alter table activities enable row level security;
+alter table trainers enable row level security;
 alter table trainings enable row level security;
 alter table users enable row level security;
 alter table attendance enable row level security;
@@ -177,9 +190,28 @@ create policy "Public read projects" on projects for select using (true);
 create policy "Auth manage activities" on activities for all using (auth.role() = 'authenticated');
 create policy "Public read activities" on activities for select using (true);
 
+create policy "Auth manage trainers" on trainers for all using (auth.role() = 'authenticated');
+create policy "Public read trainers" on trainers for select using (true); -- Only used to read usernames/names if needed, passwords handled by RPC
+
 create policy "Auth manage questions" on questions for all using (auth.role() = 'authenticated');
 create policy "Auth manage choices" on choices for all using (auth.role() = 'authenticated');
 create policy "Auth manage trainings" on trainings for all using (auth.role() = 'authenticated');
+
+-- ================================================================
+-- RPC FUNCTIONS
+-- ================================================================
+create or replace function login_trainer(p_username text, p_password text)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+  v_trainer_id uuid;
+begin
+  select id into v_trainer_id from trainers where username = p_username and password = p_password;
+  return v_trainer_id;
+end;
+$$;
 
 -- ================================================================
 -- VIEWS

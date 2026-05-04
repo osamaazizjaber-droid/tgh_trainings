@@ -11,11 +11,13 @@ const emptyTraining = {
   has_pre_test: false,
   has_post_test: false,
   has_evaluation: true,
+  trainer_id: '',
 };
 
 export default function AdminProjects() {
   const { t } = useLanguage();
   const [projects, setProjects] = useState([]);
+  const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Project modal
@@ -41,7 +43,15 @@ export default function AdminProjects() {
   // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  useEffect(() => { fetchProjects(); }, []);
+  useEffect(() => { 
+    fetchProjects(); 
+    fetchTrainers();
+  }, []);
+
+  const fetchTrainers = async () => {
+    const { data } = await supabase.from('trainers').select('id, full_name');
+    setTrainers(data || []);
+  };
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -138,7 +148,12 @@ export default function AdminProjects() {
     if (!trainingForm.title.trim()) return;
     setTrainingSaving(true);
     await supabase.from('trainings').insert({
-      ...trainingForm,
+      title: trainingForm.title,
+      days_count: trainingForm.days_count,
+      has_pre_test: trainingForm.has_pre_test,
+      has_post_test: trainingForm.has_post_test,
+      has_evaluation: trainingForm.has_evaluation,
+      trainer_id: trainingForm.trainer_id || null,
       activity_id: trainingActivityId,
     });
     setTrainingSaving(false);
@@ -378,6 +393,18 @@ export default function AdminProjects() {
                 >
                   {[1,2,3,4,5,6,7,8,9,10].map(d => (
                     <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Assign Trainer (Optional)</label>
+                <select
+                  value={trainingForm.trainer_id}
+                  onChange={(e) => setTrainingForm({ ...trainingForm, trainer_id: e.target.value })}
+                >
+                  <option value="">-- No Trainer --</option>
+                  {trainers.map(tr => (
+                    <option key={tr.id} value={tr.id}>{tr.full_name}</option>
                   ))}
                 </select>
               </div>

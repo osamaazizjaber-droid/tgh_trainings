@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { format, addDays } from 'date-fns';
 import { useLanguage } from '../../lib/LanguageContext';
 import { exportAttendance, exportTestResults, exportEvaluations, exportAll } from '../../lib/export';
+import { exportStudentTestPdf } from '../../lib/pdfExport';
 
 const BASE_URL = window.location.origin;
 
@@ -49,6 +50,7 @@ export default function AdminTrainingDetail() {
   const [tab, setTab] = useState('overview');
   const [expiryInput, setExpiryInput] = useState('');
   const [savingExpiry, setSavingExpiry] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   // Question form state
   const [showQForm, setShowQForm] = useState(false);
@@ -70,6 +72,13 @@ export default function AdminTrainingDetail() {
       supabase.from('evaluations').select('*, users(first_name, second_name, third_name, fourth_name, phone, representation, job_function)').eq('training_id', id),
       supabase.from('test_score_comparison').select('*').eq('training_id', id),
     ]);
+
+    const trainerId = localStorage.getItem('trainer_id');
+    if (trainerId && t && t.trainer_id !== trainerId) {
+      window.location.href = '/admin';
+      return;
+    }
+
     setTraining(t);
     setAttendance(att || []);
     setQuestions(q || []);
@@ -95,6 +104,19 @@ export default function AdminTrainingDetail() {
     await supabase.from('trainings').update({ qr_expires_at: newExp.toISOString() }).eq('id', id);
     setSavingExpiry(false);
     fetchAll();
+  };
+
+  const handleDownloadPdf = async (student) => {
+    setDownloadingPdf(student.user_id);
+    const { data: answers } = await supabase.from('answers')
+      .select('*, choices(choice_text, is_correct)')
+      .eq('user_id', student.user_id);
+    
+    const qIds = new Set(questions.map(q => q.id));
+    const relevantAnswers = (answers || []).filter(a => qIds.has(a.question_id));
+
+    exportStudentTestPdf(student, training, questions, relevantAnswers, t);
+    setDownloadingPdf(false);
   };
 
   const saveQuestion = async () => {
@@ -321,6 +343,7 @@ export default function AdminTrainingDetail() {
                     <th>Pre Score</th><th>Pre %</th>
                     <th>Post Score</th><th>Post %</th>
                     <th>Improvement</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -340,6 +363,15 @@ export default function AdminTrainingDetail() {
                           <span className={`badge ${diff > 0 ? 'badge-success' : diff < 0 ? 'badge-danger' : 'badge-gray'}`}>
                             {diff > 0 ? '+' : ''}{diff}%
                           </span>
+                        </td>
+                        <td>
+                          <button 
+                            className="btn btn-secondary btn-sm" 
+                            onClick={() => handleDownloadPdf(r)}
+                            disabled={downloadingPdf === r.user_id}
+                          >
+                            {downloadingPdf === r.user_id ? '...' : '📄 PDF'}
+                          </button>
                         </td>
                       </tr>
                     );

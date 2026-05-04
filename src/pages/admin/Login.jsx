@@ -3,8 +3,9 @@ import { supabase } from '../../lib/supabase';
 import { useLanguage } from '../../lib/LanguageContext';
 import './Login.css';
 
-export default function AdminLogin() {
+export default function AdminLogin({ setTrainerId }) {
   const { t } = useLanguage();
+  const [role, setRole] = useState('admin'); // 'admin' or 'trainer'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,12 +16,24 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message === 'Invalid login credentials'
-        ? t('invalid_credentials')
-        : error.message
-      );
+    if (role === 'admin') {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError(error.message === 'Invalid login credentials'
+          ? t('invalid_credentials')
+          : error.message
+        );
+      }
+    } else {
+      // Trainer Login
+      const { data: trainerId, error } = await supabase.rpc('login_trainer', { p_username: email, p_password: password });
+      
+      if (error || !trainerId) {
+        setError(t('invalid_credentials') || 'Invalid trainer credentials');
+      } else {
+        localStorage.setItem('trainer_id', trainerId);
+        if (setTrainerId) setTrainerId(trainerId);
+      }
     }
     setLoading(false);
   };
@@ -52,16 +65,21 @@ export default function AdminLogin() {
             </div>
           )}
 
+          <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+            <button type="button" className={`btn ${role === 'admin' ? 'btn-primary' : 'btn-ghost'}`} style={{ flex: 1 }} onClick={() => setRole('admin')}>Admin</button>
+            <button type="button" className={`btn ${role === 'trainer' ? 'btn-primary' : 'btn-ghost'}`} style={{ flex: 1 }} onClick={() => setRole('trainer')}>Trainer</button>
+          </div>
+
           <div className="form-group">
-            <label htmlFor="login-email">{t('email_address')}</label>
+            <label htmlFor="login-email">{role === 'admin' ? t('email_address') : 'Username'}</label>
             <input
               id="login-email"
-              type="email"
+              type={role === 'admin' ? 'email' : 'text'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@example.com"
+              placeholder={role === 'admin' ? "admin@example.com" : "trainer_username"}
               required
-              autoComplete="email"
+              autoComplete={role === 'admin' ? 'email' : 'username'}
             />
           </div>
 

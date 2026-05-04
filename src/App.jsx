@@ -8,6 +8,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminProjects from './pages/admin/Projects';
 import AdminTrainingDetail from './pages/admin/TrainingDetail';
 import AdminAnalytics from './pages/admin/Analytics';
+import AdminTrainers from './pages/admin/Trainers';
 import AdminLayout from './components/admin/AdminLayout';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 
@@ -19,6 +20,7 @@ import EvaluationPage from './pages/attendee/EvaluationPage';
 
 export default function App() {
   const [session, setSession] = useState(null);
+  const [trainerId, setTrainerId] = useState(localStorage.getItem('trainer_id') || null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -54,22 +56,23 @@ export default function App() {
       {/* Admin Auth */}
       <Route
         path="/admin/login"
-        element={session ? <Navigate to="/admin" replace /> : <AdminLogin />}
+        element={(session || trainerId) ? <Navigate to="/admin" replace /> : <AdminLogin setTrainerId={setTrainerId} />}
       />
 
       {/* Admin Protected Routes */}
       <Route
         path="/admin"
         element={
-          <ProtectedRoute session={session}>
-            <AdminLayout />
+          <ProtectedRoute session={session} trainerId={trainerId}>
+            <AdminLayout trainerId={trainerId} setTrainerId={setTrainerId} />
           </ProtectedRoute>
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route path="projects" element={<AdminProjects />} />
+        <Route path="projects" element={trainerId ? <Navigate to="/admin" replace /> : <AdminProjects />} />
         <Route path="trainings/:id" element={<AdminTrainingDetail />} />
-        <Route path="analytics" element={<AdminAnalytics />} />
+        <Route path="analytics" element={trainerId ? <Navigate to="/admin" replace /> : <AdminAnalytics />} />
+        <Route path="trainers" element={trainerId ? <Navigate to="/admin" replace /> : <AdminTrainers />} />
       </Route>
 
       {/* Default redirect */}

@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   });
   const [recentTrainings, setRecentTrainings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const trainerId = localStorage.getItem('trainer_id');
 
   const [projectsList, setProjectsList] = useState([]);
   const [activitiesList, setActivitiesList] = useState([]);
@@ -60,11 +61,15 @@ export default function AdminDashboard() {
         ] = await Promise.all([
           supabase.from('projects').select('*', { count: 'exact', head: true }),
           supabase.from('activities').select('*', { count: 'exact', head: true }),
-          supabase.from('trainings').select('*', { count: 'exact', head: true }),
+          trainerId ? supabase.from('trainings').select('*', { count: 'exact', head: true }).eq('trainer_id', trainerId) : supabase.from('trainings').select('*', { count: 'exact', head: true }),
           supabase.from('users').select('*', { count: 'exact', head: true }),
           supabase.from('attendance').select('*', { count: 'exact', head: true }),
           supabase.from('evaluations').select('*', { count: 'exact', head: true }),
-          supabase.from('trainings').select(`
+          trainerId ? supabase.from('trainings').select(`
+            id, title, days_count, has_pre_test, has_post_test, has_evaluation, created_at, qr_expires_at,
+            activities!inner(name, projects!inner(name))
+          `).eq('trainer_id', trainerId).order('created_at', { ascending: false }).limit(5)
+          : supabase.from('trainings').select(`
             id, title, days_count, has_pre_test, has_post_test, has_evaluation, created_at, qr_expires_at,
             activities!inner(name, projects!inner(name))
           `).order('created_at', { ascending: false }).limit(5),
@@ -77,14 +82,18 @@ export default function AdminDashboard() {
         let aCount = actId ? 1 : 0;
 
         if (actId) {
-          const { data: trs } = await supabase.from('trainings').select('id').eq('activity_id', actId);
+          let q = supabase.from('trainings').select('id').eq('activity_id', actId);
+          if (trainerId) q = q.eq('trainer_id', trainerId);
+          const { data: trs } = await q;
           trainingIds = (trs || []).map(t => t.id);
         } else if (projId) {
           const { data: acts } = await supabase.from('activities').select('id').eq('project_id', projId);
           aCount = acts?.length || 0;
           const actIds = (acts || []).map(a => a.id);
           if (actIds.length > 0) {
-            const { data: trs } = await supabase.from('trainings').select('id').in('activity_id', actIds);
+            let q = supabase.from('trainings').select('id').in('activity_id', actIds);
+            if (trainerId) q = q.eq('trainer_id', trainerId);
+            const { data: trs } = await q;
             trainingIds = (trs || []).map(t => t.id);
           }
         }
@@ -110,6 +119,8 @@ export default function AdminDashboard() {
           id, title, days_count, has_pre_test, has_post_test, has_evaluation, created_at, qr_expires_at,
           activities!inner(name, projects!inner(name))
         `).order('created_at', { ascending: false }).limit(5);
+
+        if (trainerId) recentQuery = recentQuery.eq('trainer_id', trainerId);
 
         if (actId) {
            recentQuery = recentQuery.eq('activity_id', actId);

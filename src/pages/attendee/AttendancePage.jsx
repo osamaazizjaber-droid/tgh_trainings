@@ -114,6 +114,66 @@ export default function AttendancePage() {
     setSubmitting(false);
   };
 
+  const handleEditInfo = () => {
+    setForm({
+      first_name: existingUser.first_name || '',
+      second_name: existingUser.second_name || '',
+      third_name: existingUser.third_name || '',
+      fourth_name: existingUser.fourth_name || '',
+      phone: existingUser.phone || '',
+      gender: existingUser.gender || '',
+      age: existingUser.age || '',
+      governorate: existingUser.governorate || '',
+      district: existingUser.district || '',
+      subdistrict: existingUser.subdistrict || '',
+      village: existingUser.village || '',
+      representation: existingUser.representation || '',
+      job_function: existingUser.job_function || '',
+    });
+    setPhase('edit');
+  };
+
+  const handleUpdateInfo = async (e) => {
+    e.preventDefault();
+    setSubmitting(true); setError('');
+
+    if (!form.first_name || !form.second_name || !form.phone || !form.gender || !form.age || !form.governorate) {
+      setError(t('fill_required_fields'));
+      setSubmitting(false); return;
+    }
+
+    if (form.phone !== existingUser.phone) {
+      const { data: existing } = await supabase.from('users').select('id').eq('phone', form.phone).maybeSingle();
+      if (existing) {
+        setError(t('phone_exists'));
+        setSubmitting(false); return;
+      }
+    }
+
+    const { error: updateErr } = await supabase.from('users').update({
+      first_name: form.first_name.trim(),
+      second_name: form.second_name.trim(),
+      third_name: form.third_name.trim() || null,
+      fourth_name: form.fourth_name.trim() || null,
+      phone: form.phone.trim(),
+      gender: form.gender,
+      age: parseInt(form.age),
+      governorate: form.governorate,
+      district: form.district || null,
+      subdistrict: form.subdistrict || null,
+      village: form.village.trim() || null,
+      representation: form.representation.trim() || null,
+      job_function: form.job_function.trim() || null,
+    }).eq('id', existingUser.id);
+
+    if (updateErr) { setError(t('reg_error')); setSubmitting(false); return; }
+
+    const { data: updatedUser } = await supabase.from('users').select('*').eq('id', existingUser.id).single();
+    setExistingUser(updatedUser);
+    setPhase('checkin');
+    setSubmitting(false);
+  };
+
   const handlePhoneLookup = async () => {
     if (!phoneLookup.trim()) return;
     setLookingUp(true); setError('');
@@ -200,9 +260,101 @@ export default function AttendancePage() {
             <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>{t('welcome_back')}</p>
             <h3 style={{ marginBottom: 16 }}>{fullName(existingUser)}</h3>
             <p style={{ marginBottom: 24 }}>{t('want_to_checkin')} <strong>{t('day')} {dayNumber}</strong>؟</p>
-            <button className="btn btn-primary" onClick={handleCheckIn} disabled={submitting} style={{ width: '100%', padding: 14 }}>
-              {submitting ? <><span className="spinner spinner-sm" /> {t('loading')}</> : t('check_in_now')}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <button className="btn btn-primary" onClick={handleCheckIn} disabled={submitting} style={{ width: '100%', padding: 14 }}>
+                {submitting ? <><span className="spinner spinner-sm" /> {t('loading')}</> : t('check_in_now')}
+              </button>
+              <button className="btn btn-secondary" onClick={handleEditInfo} disabled={submitting} style={{ width: '100%', padding: 14 }}>
+                {t('edit_information') || 'Edit Information'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Information Form */}
+        {phase === 'edit' && (
+          <div className="animate-fade">
+            {error && <div className="alert alert-error" style={{ marginBottom: 20 }}>{error}</div>}
+            
+            <h3 style={{ marginBottom: 24, textAlign: 'center' }}>{t('edit_information') || 'Edit Information'}</h3>
+
+            <div className="form-group" style={{ marginBottom: 24 }}>
+              <label>{t('full_name')} *</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <input placeholder={t('first_name')} value={form.first_name} onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
+                <input placeholder={t('father_name')} value={form.second_name} onChange={(e) => setForm({ ...form, second_name: e.target.value })} />
+                <input placeholder={t('grandfather_name')} value={form.third_name} onChange={(e) => setForm({ ...form, third_name: e.target.value })} />
+                <input placeholder={t('family_name')} value={form.fourth_name} onChange={(e) => setForm({ ...form, fourth_name: e.target.value })} />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+              <div className="form-group">
+                <label>{t('gender')} *</label>
+                <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
+                  <option value="">{t('choose_option')}</option>
+                  <option value="male">{t('male')}</option>
+                  <option value="female">{t('female')}</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>{t('age')} *</label>
+                <input type="number" min="15" max="99" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 32 }}>
+              <label>{t('phone_number')} *</label>
+              <input type="tel" placeholder="07..." value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+
+            <h3 style={{ marginBottom: 16, fontSize: '1rem', color: 'var(--text-secondary)' }}>{t('geo_location')}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div className="form-group">
+                <label>{t('governorate')} *</label>
+                <select value={form.governorate} onChange={(e) => setForm({ ...form, governorate: e.target.value, district: '', subdistrict: '' })}>
+                  <option value="">{t('choose_option')}</option>
+                  {getGovernorates().map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>{t('district')}</label>
+                <select value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value, subdistrict: '' })} disabled={!form.governorate}>
+                  <option value="">{t('choose_option')}</option>
+                  {getDistricts(form.governorate).map(d => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>الناحية</label>
+                <select value={form.subdistrict} onChange={e => setForm({ ...form, subdistrict: e.target.value })} disabled={!form.district}>
+                  <option value="">{t('choose_option')}</option>
+                  {getSubdistricts(form.governorate, form.district).map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>{t('village_area')}</label>
+                <input placeholder="" value={form.village} onChange={(e) => setForm({ ...form, village: e.target.value })} />
+              </div>
+            </div>
+
+            <h3 style={{ marginBottom: 16, fontSize: '1rem', color: 'var(--text-secondary)' }}>{t('professional_info')}</h3>
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label>{t('representation')}</label>
+              <input placeholder="" value={form.representation} onChange={(e) => setForm({ ...form, representation: e.target.value })} />
+            </div>
+            <div className="form-group" style={{ marginBottom: 32 }}>
+              <label>{t('job_function')}</label>
+              <input placeholder="" value={form.job_function} onChange={(e) => setForm({ ...form, job_function: e.target.value })} />
+            </div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button className="btn btn-secondary" onClick={() => { setPhase('checkin'); setError(''); }} disabled={submitting} style={{ flex: 1, padding: 14 }}>
+                {t('cancel') || 'Cancel'}
+              </button>
+              <button className="btn btn-primary" onClick={handleUpdateInfo} disabled={submitting} style={{ flex: 2, padding: 14 }}>
+                {submitting ? <><span className="spinner spinner-sm" /> {t('loading')}</> : (t('save') || 'Save')}
+              </button>
+            </div>
           </div>
         )}
 
