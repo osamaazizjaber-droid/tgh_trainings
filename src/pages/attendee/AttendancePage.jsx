@@ -13,7 +13,7 @@ const checkExpiry = (training) => {
 
 const emptyForm = {
   first_name: '', second_name: '', third_name: '', fourth_name: '',
-  phone: '', gender: '', age: '',
+  phone: '', gender: '', dob: '', age: '',
   governorate: '', district: '', subdistrict: '', village: '',
   representation: '', job_function: '',
 };
@@ -68,7 +68,7 @@ export default function AttendancePage() {
     e.preventDefault();
     setSubmitting(true); setError('');
 
-    if (!form.first_name || !form.second_name || !form.phone || !form.gender || !form.age || !form.governorate) {
+    if (!form.first_name || !form.second_name || !form.phone || !form.gender || !form.dob || !form.governorate) {
       setError(t('fill_required_fields'));
       setSubmitting(false); return;
     }
@@ -86,7 +86,8 @@ export default function AttendancePage() {
       fourth_name: form.fourth_name.trim() || null,
       phone: form.phone.trim(),
       gender: form.gender,
-      age: parseInt(form.age),
+      dob: form.dob || null,
+      age: parseInt(form.age) || null,
       governorate: form.governorate,
       district: form.district || null,
       subdistrict: form.subdistrict || null,
@@ -122,6 +123,7 @@ export default function AttendancePage() {
       fourth_name: existingUser.fourth_name || '',
       phone: existingUser.phone || '',
       gender: existingUser.gender || '',
+      dob: existingUser.dob || '',
       age: existingUser.age || '',
       governorate: existingUser.governorate || '',
       district: existingUser.district || '',
@@ -137,7 +139,7 @@ export default function AttendancePage() {
     e.preventDefault();
     setSubmitting(true); setError('');
 
-    if (!form.first_name || !form.second_name || !form.phone || !form.gender || !form.age || !form.governorate) {
+    if (!form.first_name || !form.second_name || !form.phone || !form.gender || !form.dob || !form.governorate) {
       setError(t('fill_required_fields'));
       setSubmitting(false); return;
     }
@@ -157,7 +159,8 @@ export default function AttendancePage() {
       fourth_name: form.fourth_name.trim() || null,
       phone: form.phone.trim(),
       gender: form.gender,
-      age: parseInt(form.age),
+      dob: form.dob || null,
+      age: parseInt(form.age) || null,
       governorate: form.governorate,
       district: form.district || null,
       subdistrict: form.subdistrict || null,
@@ -298,8 +301,16 @@ export default function AttendancePage() {
                 </select>
               </div>
               <div className="form-group">
-                <label>{t('age')} *</label>
-                <input type="number" min="15" max="99" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
+                <label>{t('dob')} *</label>
+                <input type="date" max={new Date().toISOString().split('T')[0]} value={form.dob} onChange={(e) => {
+                  const newDob = e.target.value;
+                  let newAge = form.age;
+                  if (newDob) {
+                    const diff = Date.now() - new Date(newDob).getTime();
+                    newAge = Math.abs(new Date(diff).getUTCFullYear() - 1970);
+                  }
+                  setForm({ ...form, dob: newDob, age: newAge });
+                }} />
               </div>
             </div>
 
@@ -405,8 +416,16 @@ export default function AttendancePage() {
                 </select>
               </div>
               <div className="form-group">
-                <label>{t('age')} *</label>
-                <input type="number" min="15" max="99" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
+                <label>{t('dob')} *</label>
+                <input type="date" max={new Date().toISOString().split('T')[0]} value={form.dob} onChange={(e) => {
+                  const newDob = e.target.value;
+                  let newAge = form.age;
+                  if (newDob) {
+                    const diff = Date.now() - new Date(newDob).getTime();
+                    newAge = Math.abs(new Date(diff).getUTCFullYear() - 1970);
+                  }
+                  setForm({ ...form, dob: newDob, age: newAge });
+                }} />
               </div>
             </div>
 

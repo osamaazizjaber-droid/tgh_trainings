@@ -67,7 +67,7 @@ export default function AdminTrainingDetail() {
     setLoading(true);
     const [{ data: t }, { data: att }, { data: q }, { data: ev }, { data: tr }] = await Promise.all([
       supabase.from('trainings').select('*, activities(name, projects(name))').eq('id', id).single(),
-      supabase.from('attendance').select('*, users(first_name, second_name, third_name, fourth_name, phone, gender, age, governorate, district, subdistrict, village, representation, job_function)').eq('training_id', id).order('day_number'),
+      supabase.from('attendance').select('*, users(first_name, second_name, third_name, fourth_name, phone, gender, dob, age, governorate, district, subdistrict, village, representation, job_function)').eq('training_id', id).order('day_number'),
       supabase.from('questions').select('*, choices(*)').eq('training_id', id).order('order_num'),
       supabase.from('evaluations').select('*, users(first_name, second_name, third_name, fourth_name, phone, representation, job_function)').eq('training_id', id),
       supabase.from('test_score_comparison').select('*').eq('training_id', id),
@@ -291,7 +291,7 @@ export default function AdminTrainingDetail() {
               <table>
                 <thead>
                   <tr>
-                    <th>Full Name</th><th>Phone</th><th>Gender</th><th>Age</th>
+                    <th>Full Name</th><th>Phone</th><th>Gender</th><th>Age</th><th>DoB</th>
                     <th>Governorate</th><th>District</th><th>Subdistrict</th><th>Village</th>
                     <th>Representation</th><th>Function</th><th>Day</th><th>Date</th>
                   </tr>
@@ -306,6 +306,7 @@ export default function AdminTrainingDetail() {
                       <td className="text-muted">{u?.phone}</td>
                       <td>{u?.gender?.toLowerCase() === 'male' ? '♂ Male' : '♀ Female'}</td>
                       <td>{u?.age}</td>
+                      <td className="text-muted" style={{ fontSize: '0.82rem' }}>{u?.dob || '—'}</td>
                       <td>{u?.governorate}</td>
                       <td className="text-muted" style={{ fontSize: '0.82rem' }}>{u?.district || '—'}</td>
                       <td className="text-muted" style={{ fontSize: '0.82rem' }}>{u?.subdistrict || '—'}</td>

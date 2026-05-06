@@ -63,6 +63,7 @@ create table if not exists users (
   fourth_name text,
   phone text unique not null,
   gender text check (gender in ('male', 'female')),
+  dob date,
   age int check (age > 0 and age < 120),
   governorate text,
   district text,
