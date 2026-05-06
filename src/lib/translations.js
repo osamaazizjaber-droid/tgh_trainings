@@ -159,6 +159,8 @@ export const translations = {
     eval_success: "Thank you for your evaluation!",
     eval_success_desc: "Your feedback helps us improve training quality.",
     submit_evaluation: "Submit Evaluation",
+    scale: "Scale",
+    invalid_phone: "Phone number must be exactly 11 digits",
     
     // Evaluation Scale
     eval_scale_1: "I am strongly not agree",
@@ -351,6 +353,8 @@ export const translations = {
     eval_success: "شكراً على تقييمك!",
     eval_success_desc: "ساعدنا تقييمك في تحسين جودة التدريبات.",
     submit_evaluation: "إرسال التقييم",
+    scale: "مقياس التقييم",
+    invalid_phone: "يجب أن يتكون رقم الهاتف من 11 رقماً بالضبط",
 
     // Evaluation Scale
     eval_scale_1: "لا اوافق بشدة",

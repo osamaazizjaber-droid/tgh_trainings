@@ -73,6 +73,11 @@ export default function AttendancePage() {
       setSubmitting(false); return;
     }
 
+    if (!/^\d{11}$/.test(form.phone.trim())) {
+      setError(t('invalid_phone') || 'Phone number must be exactly 11 digits');
+      setSubmitting(false); return;
+    }
+
     const { data: existing } = await supabase.from('users').select('id').eq('phone', form.phone).maybeSingle();
     if (existing) {
       setError(t('phone_exists'));
@@ -141,6 +146,11 @@ export default function AttendancePage() {
 
     if (!form.first_name || !form.second_name || !form.phone || !form.gender || !form.dob || !form.governorate) {
       setError(t('fill_required_fields'));
+      setSubmitting(false); return;
+    }
+
+    if (!/^\d{11}$/.test(form.phone.trim())) {
+      setError(t('invalid_phone') || 'Phone number must be exactly 11 digits');
       setSubmitting(false); return;
     }
 
@@ -316,7 +326,7 @@ export default function AttendancePage() {
 
             <div className="form-group" style={{ marginBottom: 32 }}>
               <label>{t('phone_number')} *</label>
-              <input type="tel" placeholder="07..." value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <input type="tel" placeholder="07716739456" maxLength={11} pattern="\d{11}" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
 
             <h3 style={{ marginBottom: 16, fontSize: '1rem', color: 'var(--text-secondary)' }}>{t('geo_location')}</h3>
@@ -431,7 +441,7 @@ export default function AttendancePage() {
 
             <div className="form-group" style={{ marginBottom: 32 }}>
               <label>{t('phone_number')} *</label>
-              <input type="tel" placeholder="07..." value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <input type="tel" placeholder="07716739456" maxLength={11} pattern="\d{11}" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
 
             <h3 style={{ marginBottom: 16, fontSize: '1rem', color: 'var(--text-secondary)' }}>{t('geo_location')}</h3>

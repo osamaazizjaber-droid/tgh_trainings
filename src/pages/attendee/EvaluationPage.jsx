@@ -164,7 +164,7 @@ export default function EvaluationPage() {
             <h2 style={{ marginBottom: 16, textAlign: 'center' }}>{t('evaluation_form')}</h2>
             
             <div style={{ background: 'var(--bg-secondary)', padding: 16, borderRadius: 'var(--radius-md)', marginBottom: 24, fontSize: '0.9rem' }}>
-              <strong style={{ display: 'block', marginBottom: 8 }}>Scale:</strong>
+              <strong style={{ display: 'block', marginBottom: 8 }}>{t('scale') || 'Scale'}:</strong>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-secondary)' }}>
                 <span>1 - {t('eval_scale_1')}</span>
                 <span>2 - {t('eval_scale_2')}</span>
