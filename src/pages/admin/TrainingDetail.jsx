@@ -6,6 +6,7 @@ import { format, addDays } from 'date-fns';
 import { useLanguage } from '../../lib/LanguageContext';
 import { exportAttendance, exportTestResults, exportEvaluations, exportAll } from '../../lib/export';
 import { exportStudentTestPdf } from '../../lib/pdfExport';
+import { generateCertificatesPdf } from '../../lib/certificateExport';
 
 const BASE_URL = window.location.origin;
 
@@ -46,11 +47,14 @@ export default function AdminTrainingDetail() {
   const [questions, setQuestions] = useState([]);
   const [evaluations, setEvaluations] = useState([]);
   const [testResults, setTestResults] = useState([]);
+  const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('overview');
   const [expiryInput, setExpiryInput] = useState('');
   const [savingExpiry, setSavingExpiry] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [issuingCerts, setIssuingCerts] = useState(false);
+  const [minDaysRequired, setMinDaysRequired] = useState(1);
 
   // Question form state
   const [showQForm, setShowQForm] = useState(false);
@@ -65,12 +69,13 @@ export default function AdminTrainingDetail() {
 
   const fetchAll = async () => {
     setLoading(true);
-    const [{ data: t }, { data: att }, { data: q }, { data: ev }, { data: tr }] = await Promise.all([
+    const [{ data: t }, { data: att }, { data: q }, { data: ev }, { data: tr }, { data: certs }] = await Promise.all([
       supabase.from('trainings').select('*, activities(name, projects(name))').eq('id', id).single(),
       supabase.from('attendance').select('*, users(first_name, second_name, third_name, fourth_name, phone, gender, dob, age, governorate, district, subdistrict, village, representation, job_function)').eq('training_id', id).order('day_number'),
       supabase.from('questions').select('*, choices(*)').eq('training_id', id).order('order_num'),
       supabase.from('evaluations').select('*, users(first_name, second_name, third_name, fourth_name, phone, representation, job_function)').eq('training_id', id),
       supabase.from('test_score_comparison').select('*').eq('training_id', id),
+      supabase.from('certificates').select('*').eq('training_id', id),
     ]);
 
     const trainerId = localStorage.getItem('trainer_id');
@@ -84,6 +89,8 @@ export default function AdminTrainingDetail() {
     setQuestions(q || []);
     setEvaluations(ev || []);
     setTestResults(tr || []);
+    setCertificates(certs || []);
+    if (t) setMinDaysRequired(t.days_count);
     if (t?.qr_expires_at) setExpiryInput(format(new Date(t.qr_expires_at), "yyyy-MM-dd'T'HH:mm"));
     setLoading(false);
   };
@@ -147,6 +154,63 @@ export default function AdminTrainingDetail() {
     fetchAll();
   };
 
+  const attendanceByUser = attendance.reduce((acc, a) => {
+    if (!acc[a.user_id]) acc[a.user_id] = { user: a.users, count: 0, user_id: a.user_id };
+    acc[a.user_id].count += 1;
+    return acc;
+  }, {});
+
+  const issueCertificates = async () => {
+    setIssuingCerts(true);
+    
+    const eligibleUserIds = Object.values(attendanceByUser)
+      .filter(x => x.count >= minDaysRequired)
+      .map(x => x.user_id)
+      .filter(uid => !certificates.some(c => c.user_id === uid));
+
+    if (eligibleUserIds.length === 0) {
+      alert('No new eligible participants found based on the selected criteria.');
+      setIssuingCerts(false);
+      return;
+    }
+
+    const projectCode = training.activities?.projects?.name || 'GEN';
+    const prefix = `TGH-${projectCode}-`;
+    
+    // Get highest current sequence for this project
+    const { data: projectCerts } = await supabase
+      .from('certificates')
+      .select('certificate_code')
+      .like('certificate_code', `${prefix}%`);
+      
+    let maxSeq = 0;
+    if (projectCerts) {
+      projectCerts.forEach(c => {
+        const parts = c.certificate_code.split('-');
+        const seq = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+      });
+    }
+
+    const newCerts = eligibleUserIds.map((uid, index) => {
+      const nextSeq = maxSeq + index + 1;
+      const code = `${prefix}${nextSeq.toString().padStart(3, '0')}`;
+      return {
+        training_id: id,
+        user_id: uid,
+        certificate_code: code
+      };
+    });
+
+    const { error } = await supabase.from('certificates').insert(newCerts);
+    if (error) {
+      alert('Error issuing certificates: ' + error.message);
+    } else {
+      fetchAll();
+    }
+    setIssuingCerts(false);
+  };
+
   const isExpired = training?.qr_expires_at ? new Date(training.qr_expires_at) < new Date() : true;
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -158,6 +222,7 @@ export default function AdminTrainingDetail() {
     training.has_pre_test || training.has_post_test ? { key: 'tests', label: `${t('test')} (${testResults.length})` } : null,
     training.has_evaluation ? { key: 'evaluations', label: `${t('evaluation')} (${evaluations.length})` } : null,
     training.has_pre_test || training.has_post_test ? { key: 'questions', label: `${t('questions')} (${questions.length})` } : null,
+    { key: 'certificates', label: `🎓 Certificates (${certificates.length})` },
   ].filter(Boolean);
 
   const preQs = questions.filter(q => q.type === 'pre');
@@ -484,6 +549,91 @@ export default function AdminTrainingDetail() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── CERTIFICATES TAB ── */}
+      {tab === 'certificates' && (
+        <div className="card">
+          <div className="card-header" style={{ alignItems: 'flex-start' }}>
+            <div>
+              <h3 className="card-title">Issue Certificates</h3>
+              <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: 4 }}>
+                Certificates generated for participants meeting the minimum attendance requirement.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ fontSize: '0.75rem' }}>Min. Days Attended</label>
+                <select 
+                  value={minDaysRequired} 
+                  onChange={e => setMinDaysRequired(parseInt(e.target.value))}
+                  style={{ padding: '6px 12px', fontSize: '0.85rem' }}
+                >
+                  {Array.from({ length: training.days_count }).map((_, i) => (
+                    <option key={i+1} value={i+1}>{i+1} Day{i > 0 ? 's' : ''}</option>
+                  ))}
+                </select>
+              </div>
+              <button 
+                className="btn btn-primary btn-sm" 
+                onClick={issueCertificates}
+                disabled={issuingCerts}
+              >
+                {issuingCerts ? <span className="spinner spinner-sm" /> : '+ Issue Certificates'}
+              </button>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                onClick={() => generateCertificatesPdf(certificates, attendanceByUser, training, BASE_URL)}
+                disabled={certificates.length === 0}
+              >
+                ⬇ Download PDFs
+              </button>
+            </div>
+          </div>
+          
+          <div className="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Days Attended</th>
+                  <th>Status</th>
+                  <th>Certificate Code</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.values(attendanceByUser).map(record => {
+                  const cert = certificates.find(c => c.user_id === record.user_id);
+                  const name = [record.user?.first_name, record.user?.second_name, record.user?.third_name, record.user?.fourth_name].filter(Boolean).join(' ');
+                  const isEligible = record.count >= minDaysRequired;
+                  
+                  return (
+                    <tr key={record.user_id}>
+                      <td style={{ fontWeight: 600 }}>{name}</td>
+                      <td>
+                        <span className={`badge ${isEligible ? 'badge-success' : 'badge-gray'}`}>
+                          {record.count} / {training.days_count}
+                        </span>
+                      </td>
+                      <td>
+                        {cert ? (
+                          <span className="badge badge-success">Issued</span>
+                        ) : isEligible ? (
+                          <span className="badge badge-warning">Pending</span>
+                        ) : (
+                          <span className="badge badge-danger">Ineligible</span>
+                        )}
+                      </td>
+                      <td style={{ fontFamily: 'monospace' }}>
+                        {cert ? cert.certificate_code : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

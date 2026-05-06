@@ -17,6 +17,7 @@ import AttendancePage from './pages/attendee/AttendancePage';
 import PreTestPage from './pages/attendee/PreTestPage';
 import PostTestPage from './pages/attendee/PostTestPage';
 import EvaluationPage from './pages/attendee/EvaluationPage';
+import VerifyCertificate from './pages/attendee/VerifyCertificate';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -52,6 +53,7 @@ export default function App() {
       <Route path="/pretest" element={<PreTestPage />} />
       <Route path="/posttest" element={<PostTestPage />} />
       <Route path="/evaluation" element={<EvaluationPage />} />
+      <Route path="/verify" element={<VerifyCertificate />} />
 
       {/* Admin Auth */}
       <Route

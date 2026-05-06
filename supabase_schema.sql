@@ -138,6 +138,18 @@ create table if not exists evaluations (
 );
 
 -- ================================================================
+-- 10. CERTIFICATES
+-- ================================================================
+create table if not exists certificates (
+  id uuid primary key default gen_random_uuid(),
+  training_id uuid references trainings(id) on delete cascade not null,
+  user_id uuid references users(id) on delete cascade not null,
+  certificate_code text unique not null,
+  issued_at timestamptz default now(),
+  unique(user_id, training_id)
+);
+
+-- ================================================================
 -- ROW LEVEL SECURITY (RLS)
 -- ================================================================
 alter table projects enable row level security;
@@ -150,6 +162,7 @@ alter table questions enable row level security;
 alter table choices enable row level security;
 alter table answers enable row level security;
 alter table evaluations enable row level security;
+alter table certificates enable row level security;
 
 -- Public read trainings (QR validation)
 create policy "Public read trainings" on trainings for select using (true);
@@ -173,6 +186,10 @@ create policy "Public read answers" on answers for select using (true);
 -- Evaluations: public insert + read
 create policy "Public insert evaluations" on evaluations for insert with check (true);
 create policy "Public read evaluations" on evaluations for select using (true);
+
+-- Certificates: public read, admin manage
+create policy "Public read certificates" on certificates for select using (true);
+create policy "Auth manage certificates" on certificates for all using (auth.role() = 'authenticated');
 
 -- Admin-only write policies
 create policy "Auth manage projects" on projects for all using (auth.role() = 'authenticated');
