@@ -417,12 +417,12 @@ export default function AdminTrainingDetail() {
               <div className="table-wrapper">
                 <table>
                   <thead>
-                    <tr><th>Name</th><th>Content</th><th>Trainer</th><th>Logistics</th><th>Materials</th><th>Overall</th><th>Comments</th></tr>
+                    <tr><th>{t('participant_code') || 'Participant Code'}</th><th>Content</th><th>Trainer</th><th>Logistics</th><th>Materials</th><th>Overall</th><th>Comments</th></tr>
                   </thead>
                   <tbody>
                     {evaluations.map(e => (
                       <tr key={e.id}>
-                        <td style={{ fontWeight: 600 }}>{[e.users?.first_name, e.users?.second_name, e.users?.third_name, e.users?.fourth_name].filter(Boolean).join(' ')}</td>
+                        <td style={{ fontWeight: 600 }}>{e.user_id ? e.user_id.split('-')[0].toUpperCase() : '—'}</td>
                         <td>{'⭐'.repeat(e.content_rating || 0)}</td>
                         <td>{'⭐'.repeat(e.trainer_rating || 0)}</td>
                         <td>{'⭐'.repeat(e.logistics_rating || 0)}</td>

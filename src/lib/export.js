@@ -61,8 +61,7 @@ export const exportTestResults = (resultsData, trainingTitle, t) => {
  */
 export const exportEvaluations = (evalData, trainingTitle, t) => {
   const rows = evalData.map((row) => ({
-    [t('full_name')]: fullName(row.users),
-    [t('phone_number')]: row.users?.phone || '',
+    [t('participant_code')]: row.user_id ? row.user_id.split('-')[0].toUpperCase() : '',
     [t('representation')]: row.users?.representation || '',
     [t('job_function')]: row.users?.job_function || '',
     [t('content_quality')]: row.content_rating,
@@ -132,7 +131,7 @@ export const exportAll = (data, trainingTitle, t) => {
 
   if (data.evaluations?.length) {
     const rows = data.evaluations.map((row) => ({
-      [t('full_name')]: fullName(row.users),
+      [t('participant_code')]: row.user_id ? row.user_id.split('-')[0].toUpperCase() : '',
       [t('representation')]: row.users?.representation || '',
       [t('job_function')]: row.users?.job_function || '',
       [t('content_quality')]: row.content_rating,

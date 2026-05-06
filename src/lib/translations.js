@@ -164,7 +164,8 @@ export const translations = {
     materials: "Materials",
     overall_rating: "Overall Rating",
     additional_comments: "Additional Comments (Optional)",
-    reason_improvement: "Reason and Areas of Improvement (Required for 3 stars or less) *"
+    reason_improvement: "Reason and Areas of Improvement (Required for 3 stars or less) *",
+    participant_code: "Participant Code"
   },
   
   ar: {
@@ -332,6 +333,7 @@ export const translations = {
     materials: "المواد التدريبية",
     overall_rating: "التقييم العام للتدريب",
     additional_comments: "تعليقات أو اقتراحات إضافية (اختياري)",
-    reason_improvement: "السبب ومجالات التحسين (مطلوب لـ 3 نجوم أو أقل) *"
+    reason_improvement: "السبب ومجالات التحسين (مطلوب لـ 3 نجوم أو أقل) *",
+    participant_code: "رمز المشارك"
   }
 };
