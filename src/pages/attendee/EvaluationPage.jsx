@@ -6,38 +6,38 @@ import { useLanguage } from '../../lib/LanguageContext';
 const USER_KEY = 'tms_user_id';
 const checkExpiry = (t) => t?.qr_expires_at && new Date(t.qr_expires_at) > new Date();
 
-const StarRating = ({ value, onChange, label, showComment, commentValue, onCommentChange }) => {
-  const { t } = useLanguage();
+const RatingRow = ({ question, value, onChange }) => {
   return (
-    <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: 'var(--radius-md)', marginBottom: 16 }}>
-      <label style={{ display: 'block', marginBottom: 12, fontWeight: 600 }}>{label}</label>
-      <div className="star-rating" style={{ justifyContent: 'center' }}>
-        {[1, 2, 3, 4, 5].map(n => (
-          <span
+    <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: 'var(--radius-md)', marginBottom: 12 }}>
+      <label style={{ display: 'block', marginBottom: 16, fontWeight: 500 }}>{question}</label>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {[1, 2, 3, 4].map(n => (
+          <button
             key={n}
-            className={`star ${n <= value ? 'filled' : ''}`}
             onClick={() => onChange(n)}
-            role="button"
-            aria-label={`${n} ${t('stars')}`}
-          >★</span>
+            style={{
+              flex: '1 1 20%',
+              padding: '10px 4px',
+              border: `1px solid ${value === n ? 'var(--primary)' : 'var(--border)'}`,
+              background: value === n ? 'var(--primary-light)' : 'var(--bg-primary)',
+              color: value === n ? '#fff' : 'inherit',
+              borderRadius: 'var(--radius-sm)',
+              cursor: 'pointer',
+              fontWeight: value === n ? 600 : 400,
+              fontSize: '0.9rem',
+              transition: 'all 0.2s',
+            }}
+          >
+            {n}
+          </button>
         ))}
       </div>
-      {showComment && (
-        <div className="animate-fade" style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--border)' }}>
-          <label style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 600 }}>
-            {t('reason_improvement')}
-          </label>
-          <textarea
-            value={commentValue}
-            onChange={e => onCommentChange(e.target.value)}
-            placeholder="..."
-            rows={2}
-            className="w-full"
-            style={{ borderColor: 'var(--danger)', marginTop: 4 }}
-            required
-          />
-        </div>
-      )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <span style={{flex: 1, textAlign: 'center'}}>{1}</span>
+        <span style={{flex: 1, textAlign: 'center'}}>{2}</span>
+        <span style={{flex: 1, textAlign: 'center'}}>{3}</span>
+        <span style={{flex: 1, textAlign: 'center'}}>{4}</span>
+      </div>
     </div>
   );
 };
@@ -51,21 +51,13 @@ export default function EvaluationPage() {
   const [phase, setPhase] = useState('loading');
   const [submitting, setSubmitting] = useState(false);
   
-  const [content, setContent] = useState(0);
-  const [trainer, setTrainer] = useState(0);
-  const [logistics, setLogistics] = useState(0);
-  const [materials, setMaterials] = useState(0);
-  const [overall, setOverall] = useState(0);
-  
-  const [categoryComments, setCategoryComments] = useState({
-    content: '', trainer: '', logistics: '', materials: '', overall: ''
-  });
-  const [comments, setComments] = useState('');
+  // 14 Rating Questions
+  const [ratings, setRatings] = useState({});
+  // 4 Open Questions
+  const [openText, setOpenText] = useState({ o1: '', o2: '', o3: '', o4: '' });
   
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState('');
-
-  const needsReason = (val) => val > 0 && val <= 3;
 
   useEffect(() => {
     if (!trainingId) { setPhase('error'); return; }
@@ -73,10 +65,10 @@ export default function EvaluationPage() {
   }, [trainingId]);
 
   const init = async () => {
-    const { data: t } = await supabase.from('trainings').select('*').eq('id', trainingId).single();
-    setTraining(t);
-    if (!t || !checkExpiry(t)) { setPhase('expired'); return; }
-    if (!t.has_evaluation) { setPhase('disabled'); return; }
+    const { data: tr } = await supabase.from('trainings').select('*').eq('id', trainingId).single();
+    setTraining(tr);
+    if (!tr || !checkExpiry(tr)) { setPhase('expired'); return; }
+    if (!tr.has_evaluation) { setPhase('disabled'); return; }
 
     const uid = localStorage.getItem(USER_KEY);
     if (!uid) { setPhase('nouser'); return; }
@@ -91,38 +83,26 @@ export default function EvaluationPage() {
 
   const submitEvaluation = async () => {
     setError('');
-    if (!content || !trainer || !logistics || !materials || !overall) {
-      setError(t('fill_required_fields')); return;
-    }
     
-    const missingComments = [
-      { v: content, k: 'content' },
-      { v: trainer, k: 'trainer' },
-      { v: logistics, k: 'logistics' },
-      { v: materials, k: 'materials' },
-      { v: overall, k: 'overall' }
-    ].filter(x => needsReason(x.v) && !categoryComments[x.k].trim());
-
-    if (missingComments.length) {
-      setError(t('explain_low_rating')); return;
+    // Check if all 14 questions are answered
+    for (let i = 1; i <= 14; i++) {
+      if (!ratings[`q${i}`]) {
+        setError(t('fill_required_fields'));
+        return;
+      }
     }
     
     setSubmitting(true);
     
+    const responses = {
+      ratings,
+      open: openText
+    };
+
     const dbPayload = { 
       user_id: userId, 
       training_id: trainingId, 
-      content_rating: content,
-      content_comment: categoryComments.content,
-      trainer_rating: trainer,
-      trainer_comment: categoryComments.trainer,
-      logistics_rating: logistics,
-      logistics_comment: categoryComments.logistics,
-      materials_rating: materials,
-      materials_comment: categoryComments.materials,
-      overall_rating: overall,
-      overall_comment: categoryComments.overall,
-      comments 
+      responses
     };
 
     await supabase.from('evaluations').insert(dbPayload);
@@ -132,7 +112,7 @@ export default function EvaluationPage() {
 
   return (
     <div className="attendee-page">
-      <div className="attendee-card">
+      <div className="attendee-card" style={{ maxWidth: 700 }}>
         <div className="attendee-logo">
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
             <img src="/logo.png" alt="TGH Logo" style={{ width: 80, height: 80, objectFit: 'contain' }} />
@@ -181,41 +161,45 @@ export default function EvaluationPage() {
 
         {phase === 'form' && (
           <div className="animate-fade">
-            <h2 style={{ marginBottom: 24, textAlign: 'center' }}>{t('evaluation_form')}</h2>
-            {error && <div className="alert alert-error" style={{ marginBottom: 20 }}>{error}</div>}
-
-            <StarRating 
-              label={t('content_quality')} value={content} onChange={setContent} 
-              showComment={needsReason(content)} commentValue={categoryComments.content} onCommentChange={v => setCategoryComments(p => ({...p, content: v}))}
-            />
-            <StarRating 
-              label={t('trainer_performance')} value={trainer} onChange={setTrainer} 
-              showComment={needsReason(trainer)} commentValue={categoryComments.trainer} onCommentChange={v => setCategoryComments(p => ({...p, trainer: v}))}
-            />
-            <StarRating 
-              label={t('logistics')} value={logistics} onChange={setLogistics} 
-              showComment={needsReason(logistics)} commentValue={categoryComments.logistics} onCommentChange={v => setCategoryComments(p => ({...p, logistics: v}))}
-            />
-            <StarRating 
-              label={t('materials')} value={materials} onChange={setMaterials} 
-              showComment={needsReason(materials)} commentValue={categoryComments.materials} onCommentChange={v => setCategoryComments(p => ({...p, materials: v}))}
-            />
-            <StarRating 
-              label={t('overall_rating')} value={overall} onChange={setOverall} 
-              showComment={needsReason(overall)} commentValue={categoryComments.overall} onCommentChange={v => setCategoryComments(p => ({...p, overall: v}))}
-            />
-
-            <div className="form-group" style={{ marginBottom: 32 }}>
-              <label>{t('additional_comments')}</label>
-              <textarea
-                rows={4}
-                value={comments}
-                onChange={e => setComments(e.target.value)}
-                placeholder="..."
-              />
+            <h2 style={{ marginBottom: 16, textAlign: 'center' }}>{t('evaluation_form')}</h2>
+            
+            <div style={{ background: 'var(--bg-secondary)', padding: 16, borderRadius: 'var(--radius-md)', marginBottom: 24, fontSize: '0.9rem' }}>
+              <strong style={{ display: 'block', marginBottom: 8 }}>Scale:</strong>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, color: 'var(--text-secondary)' }}>
+                <span>1 - {t('eval_scale_1')}</span>
+                <span>2 - {t('eval_scale_2')}</span>
+                <span>3 - {t('eval_scale_3')}</span>
+                <span>4 - {t('eval_scale_4')}</span>
+              </div>
             </div>
 
-            <button className="btn btn-primary btn-lg w-full" onClick={submitEvaluation} disabled={submitting}>
+            {error && <div className="alert alert-error" style={{ marginBottom: 20 }}>{error}</div>}
+
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map(i => (
+              <RatingRow 
+                key={i}
+                question={`${i}. ${t(`eval_q${i}`)}`}
+                value={ratings[`q${i}`]}
+                onChange={v => setRatings(p => ({ ...p, [`q${i}`]: v }))}
+              />
+            ))}
+
+            <div style={{ marginTop: 32, paddingTop: 24, borderTop: '2px solid var(--border)' }}>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="form-group" style={{ marginBottom: 24 }}>
+                  <label style={{ fontSize: '0.95rem', fontWeight: 600 }}>{t(`eval_o${i}`)}</label>
+                  <textarea
+                    rows={3}
+                    value={openText[`o${i}`]}
+                    onChange={e => setOpenText(p => ({ ...p, [`o${i}`]: e.target.value }))}
+                    placeholder={t('write_your_answer_here')}
+                    style={{ marginTop: 8 }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <button className="btn btn-primary btn-lg w-full" onClick={submitEvaluation} disabled={submitting} style={{ marginTop: 16 }}>
               {submitting ? <><span className="spinner spinner-sm" /> {t('loading')}</> : t('submit_evaluation')}
             </button>
           </div>

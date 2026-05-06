@@ -163,8 +163,8 @@ export default function AdminTrainingDetail() {
   const preQs = questions.filter(q => q.type === 'pre');
   const postQs = questions.filter(q => q.type === 'post');
 
-  const avgEval = (field) => {
-    const vals = evaluations.map(e => e[field]).filter(Boolean);
+  const avgEval = (qId) => {
+    const vals = evaluations.map(e => e.responses?.ratings?.[qId]).filter(Boolean);
     return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : '—';
   };
 
@@ -389,19 +389,12 @@ export default function AdminTrainingDetail() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Averages */}
           <div className="card">
-            <h3 className="card-title" style={{ marginBottom: 16 }}>Average Scores</h3>
+            <h3 className="card-title" style={{ marginBottom: 16 }}>Average Scores (Out of 4)</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
-              {[
-                { key: 'content_rating', label: 'Content' },
-                { key: 'trainer_rating', label: 'Trainer' },
-                { key: 'logistics_rating', label: 'Logistics' },
-                { key: 'materials_rating', label: 'Materials' },
-                { key: 'overall_rating', label: 'Overall' },
-              ].map(({ key, label }) => (
-                <div key={key} style={{ textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: 16 }}>
-                  <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary-light)' }}>{avgEval(key)}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>{label}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>/ 5</div>
+              {[1,2,3,4,5,6,7,8,9,10,11,12,13,14].map(i => (
+                <div key={i} style={{ textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '12px 8px' }}>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary-light)' }}>{avgEval(`q${i}`)}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>Q{i}</div>
                 </div>
               ))}
             </div>
@@ -415,30 +408,29 @@ export default function AdminTrainingDetail() {
             {evaluations.length === 0 ? (
               <div className="empty-state"><div className="empty-state-icon">⭐</div><h3>No evaluations yet</h3></div>
             ) : (
-              <div className="table-wrapper">
-                <table>
+              <div className="table-wrapper" style={{ overflowX: 'auto' }}>
+                <table style={{ minWidth: 800 }}>
                   <thead>
-                    <tr><th>{t('participant_code') || 'Participant Code'}</th><th>Content</th><th>Trainer</th><th>Logistics</th><th>Materials</th><th>Overall</th><th>Comments</th></tr>
+                    <tr>
+                      <th>{t('participant_code') || 'Participant Code'}</th>
+                      {[1,2,3,4,5,6,7,8,9,10,11,12,13,14].map(i => <th key={i}>Q{i}</th>)}
+                      <th>{t('eval_o1') || 'Open 1'}</th>
+                      <th>{t('eval_o2') || 'Open 2'}</th>
+                      <th>{t('eval_o3') || 'Open 3'}</th>
+                      <th>{t('eval_o4') || 'Open 4'}</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {evaluations.map(e => (
                       <tr key={e.id}>
                         <td style={{ fontWeight: 600 }}>{e.user_id ? e.user_id.split('-')[0].toUpperCase() : '—'}</td>
-                        <td>{'⭐'.repeat(e.content_rating || 0)}</td>
-                        <td>{'⭐'.repeat(e.trainer_rating || 0)}</td>
-                        <td>{'⭐'.repeat(e.logistics_rating || 0)}</td>
-                        <td>{'⭐'.repeat(e.materials_rating || 0)}</td>
-                        <td>{'⭐'.repeat(e.overall_rating || 0)}</td>
-                        <td className="text-muted" style={{ maxWidth: 200, fontSize: '0.8rem' }}>
-                          {[
-                            e.content_comment ? `المحتوى: ${e.content_comment}` : null,
-                            e.trainer_comment ? `المدرب: ${e.trainer_comment}` : null,
-                            e.logistics_comment ? `اللوجستيات: ${e.logistics_comment}` : null,
-                            e.materials_comment ? `المواد: ${e.materials_comment}` : null,
-                            e.overall_comment ? `عام: ${e.overall_comment}` : null,
-                            e.comments ? `إضافي: ${e.comments}` : null
-                          ].filter(Boolean).join(' | ') || '—'}
-                        </td>
+                        {[1,2,3,4,5,6,7,8,9,10,11,12,13,14].map(i => (
+                          <td key={i}>{e.responses?.ratings?.[`q${i}`] || '—'}</td>
+                        ))}
+                        <td className="text-muted" style={{ maxWidth: 150, fontSize: '0.8rem' }}>{e.responses?.open?.o1 || '—'}</td>
+                        <td className="text-muted" style={{ maxWidth: 150, fontSize: '0.8rem' }}>{e.responses?.open?.o2 || '—'}</td>
+                        <td className="text-muted" style={{ maxWidth: 150, fontSize: '0.8rem' }}>{e.responses?.open?.o3 || '—'}</td>
+                        <td className="text-muted" style={{ maxWidth: 150, fontSize: '0.8rem' }}>{e.responses?.open?.o4 || '—'}</td>
                       </tr>
                     ))}
                   </tbody>

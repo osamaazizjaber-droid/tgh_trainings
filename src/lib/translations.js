@@ -154,18 +154,40 @@ export const translations = {
     points: "Points",
     total_points: "Total Points",
     write_your_answer_here: "Write your answer here...",
+    write_your_answer_here: "Write your answer here...",
     evaluation_form: "Evaluation Form",
     eval_success: "Thank you for your evaluation!",
     eval_success_desc: "Your feedback helps us improve training quality.",
     submit_evaluation: "Submit Evaluation",
-    explain_low_rating: "Please explain the reason for categories rated 3 stars or less",
-    content_quality: "Content Quality",
-    trainer_performance: "Trainer Performance",
-    logistics: "Logistics",
-    materials: "Materials",
-    overall_rating: "Overall Rating",
-    additional_comments: "Additional Comments (Optional)",
-    reason_improvement: "Reason and Areas of Improvement (Required for 3 stars or less) *",
+    
+    // Evaluation Scale
+    eval_scale_1: "I am strongly not agree",
+    eval_scale_2: "I am not agree",
+    eval_scale_3: "I am agree",
+    eval_scale_4: "I am strongly agree",
+
+    // Evaluation Questions
+    eval_q1: "The training was useful for my work",
+    eval_q2: "The training topics were related for my work",
+    eval_q3: "I had the chance to improve my knowledge",
+    eval_q4: "The training was interesting and active",
+    eval_q5: "The training methods (presentations, group work, role play, etc.) were effective",
+    eval_q6: "The training materials and presentations were useful and easy to understand",
+    eval_q7: "The visual aids and handouts were useful",
+    eval_q8: "The trainer was well prepared and knowledgeable",
+    eval_q9: "The trainer explained the topics clearly and encouraged participation and discussion",
+    eval_q10: "The time allocated for the training was appropriate",
+    eval_q11: "The training venue was comfortable and suitable for learning",
+    eval_q12: "The logistical arrangements (transportation, refreshments, seating, equipment, etc.) were well organized",
+    eval_q13: "Overall, I am satisfied with the training",
+    eval_q14: "I would like to have other training on similar topics",
+
+    // Open Questions
+    eval_o1: "What did you like most about the training?",
+    eval_o2: "What could be improved in future trainings?",
+    eval_o3: "Any additional comments or suggestions:",
+    eval_o4: "List three new things (information) you learned during the training",
+    
     participant_code: "Participant Code"
   },
   
@@ -324,18 +346,40 @@ export const translations = {
     points: "نقاط",
     total_points: "إجمالي النقاط",
     write_your_answer_here: "اكتب إجابتك هنا...",
+    write_your_answer_here: "اكتب إجابتك هنا...",
     evaluation_form: "استمارة التقييم",
     eval_success: "شكراً على تقييمك!",
     eval_success_desc: "ساعدنا تقييمك في تحسين جودة التدريبات.",
     submit_evaluation: "إرسال التقييم",
-    explain_low_rating: "يرجى توضيح سبب التقييم للفئات التي حصلت على 3 نجوم أو أقل",
-    content_quality: "جودة المحتوى",
-    trainer_performance: "أداء وكفاءة المدرب",
-    logistics: "اللوجستيات",
-    materials: "المواد التدريبية",
-    overall_rating: "التقييم العام للتدريب",
-    additional_comments: "تعليقات أو اقتراحات إضافية (اختياري)",
-    reason_improvement: "السبب ومجالات التحسين (مطلوب لـ 3 نجوم أو أقل) *",
+
+    // Evaluation Scale
+    eval_scale_1: "لا اوافق بشدة",
+    eval_scale_2: "لا اوافق",
+    eval_scale_3: "أوافق",
+    eval_scale_4: "أوافق بشدة",
+
+    // Evaluation Questions
+    eval_q1: "كان التدريب مفيدًا لعملي",
+    eval_q2: "لقد كانت موضوعات التدريب لها علاقة بعملي",
+    eval_q3: "كان لدي فرصة لتحسين معلوماتي",
+    eval_q4: "كان التدريب ممتعًا ونشطًا",
+    eval_q5: "كانت طرق التدريب والتيسير (العروض، العمل الجماعي، التمثيل، إلخ) فعّالة",
+    eval_q6: "كانت المواد والعروض التدريبية مفيدة وسهلة الفهم",
+    eval_q7: "كانت الوسائل البصرية والمطبوعات مفيدة",
+    eval_q8: "كان المدرب مستعدًا بشكل جيد ولديه معرفة كافية بالمواضيع",
+    eval_q9: "شرح المدرب المواضيع بوضوح وشجع على المشاركة والنقاش",
+    eval_q10: "كان الوقت المخصص للتدريب مناسبًا",
+    eval_q11: "كان مكان التدريب مريحًا ومناسبًا للتعلم",
+    eval_q12: "كانت الترتيبات اللوجستية (النقل، الضيافة، المقاعد، المعدات، إلخ) منظمة بشكل جيد",
+    eval_q13: "بشكل عام، أنا راضٍ/راضية عن التدريب",
+    eval_q14: "أود الحصول على تدريب آخر حول مواضيع مشابهة",
+
+    // Open Questions
+    eval_o1: "ما الذي أعجبك أكثر في التدريب؟",
+    eval_o2: "ما الذي يمكن تحسينه في التدريبات القادمة؟",
+    eval_o3: "أي ملاحظات أو اقتراحات إضافية:",
+    eval_o4: "اذكر ثلاثة أشياء (معلومات) جديدة تعلمتها خلال التدريب",
+
     participant_code: "رمز المشارك"
   }
 };

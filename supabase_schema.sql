@@ -132,17 +132,7 @@ create table if not exists evaluations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references users(id) on delete cascade not null,
   training_id uuid references trainings(id) on delete cascade not null,
-  content_rating int check (content_rating between 1 and 5),
-  content_comment text,
-  trainer_rating int check (trainer_rating between 1 and 5),
-  trainer_comment text,
-  logistics_rating int check (logistics_rating between 1 and 5),
-  logistics_comment text,
-  materials_rating int check (materials_rating between 1 and 5),
-  materials_comment text,
-  overall_rating int check (overall_rating between 1 and 5),
-  overall_comment text,
-  comments text,
+  responses jsonb default '{}'::jsonb,
   created_at timestamptz default now(),
   unique(user_id, training_id)
 );

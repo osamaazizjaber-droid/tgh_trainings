@@ -61,28 +61,38 @@ export const exportTestResults = (resultsData, trainingTitle, t) => {
  * Export evaluation results to Excel
  */
 export const exportEvaluations = (evalData, trainingTitle, t) => {
-  const rows = evalData.map((row) => ({
-    [t('participant_code')]: row.user_id ? row.user_id.split('-')[0].toUpperCase() : '',
-    [t('representation')]: row.users?.representation || '',
-    [t('job_function')]: row.users?.job_function || '',
-    [t('content_quality')]: row.content_rating,
-    [`${t('content_quality')} Comment`]: row.content_comment || '',
-    [t('trainer_performance')]: row.trainer_rating,
-    [`${t('trainer_performance')} Comment`]: row.trainer_comment || '',
-    [t('logistics')]: row.logistics_rating,
-    [`${t('logistics')} Comment`]: row.logistics_comment || '',
-    [t('materials')]: row.materials_rating,
-    [`${t('materials')} Comment`]: row.materials_comment || '',
-    [t('overall_rating')]: row.overall_rating,
-    [`${t('overall_rating')} Comment`]: row.overall_comment || '',
-    [`Average Rating`]: (
-      ((row.content_rating || 0) + (row.trainer_rating || 0) +
-       (row.logistics_rating || 0) + (row.materials_rating || 0) +
-       (row.overall_rating || 0)) / 5
-    ).toFixed(2),
-    [t('additional_comments')]: row.comments || '',
-    [t('date')]: row.created_at ? format(new Date(row.created_at), 'yyyy-MM-dd') : '',
-  }));
+  const rows = evalData.map((row) => {
+    const ratings = row.responses?.ratings || {};
+    const open = row.responses?.open || {};
+    
+    return {
+      [t('participant_code') || 'Participant Code']: row.user_id ? row.user_id.split('-')[0].toUpperCase() : '',
+      [t('representation') || 'Representation']: row.users?.representation || '',
+      [t('job_function') || 'Job Function']: row.users?.job_function || '',
+      [t('eval_q1') || 'Q1']: ratings.q1 || '',
+      [t('eval_q2') || 'Q2']: ratings.q2 || '',
+      [t('eval_q3') || 'Q3']: ratings.q3 || '',
+      [t('eval_q4') || 'Q4']: ratings.q4 || '',
+      [t('eval_q5') || 'Q5']: ratings.q5 || '',
+      [t('eval_q6') || 'Q6']: ratings.q6 || '',
+      [t('eval_q7') || 'Q7']: ratings.q7 || '',
+      [t('eval_q8') || 'Q8']: ratings.q8 || '',
+      [t('eval_q9') || 'Q9']: ratings.q9 || '',
+      [t('eval_q10') || 'Q10']: ratings.q10 || '',
+      [t('eval_q11') || 'Q11']: ratings.q11 || '',
+      [t('eval_q12') || 'Q12']: ratings.q12 || '',
+      [t('eval_q13') || 'Q13']: ratings.q13 || '',
+      [t('eval_q14') || 'Q14']: ratings.q14 || '',
+      [`Average Rating`]: (
+        [1,2,3,4,5,6,7,8,9,10,11,12,13,14].reduce((sum, i) => sum + (ratings[`q${i}`] || 0), 0) / 14
+      ).toFixed(2),
+      [t('eval_o1') || 'Open 1']: open.o1 || '',
+      [t('eval_o2') || 'Open 2']: open.o2 || '',
+      [t('eval_o3') || 'Open 3']: open.o3 || '',
+      [t('eval_o4') || 'Open 4']: open.o4 || '',
+      [t('date') || 'Date']: row.created_at ? format(new Date(row.created_at), 'yyyy-MM-dd') : '',
+    };
+  });
 
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -132,22 +142,34 @@ export const exportAll = (data, trainingTitle, t) => {
   }
 
   if (data.evaluations?.length) {
-    const rows = data.evaluations.map((row) => ({
-      [t('participant_code')]: row.user_id ? row.user_id.split('-')[0].toUpperCase() : '',
-      [t('representation')]: row.users?.representation || '',
-      [t('job_function')]: row.users?.job_function || '',
-      [t('content_quality')]: row.content_rating,
-      [`${t('content_quality')} Comment`]: row.content_comment || '',
-      [t('trainer_performance')]: row.trainer_rating,
-      [`${t('trainer_performance')} Comment`]: row.trainer_comment || '',
-      [t('logistics')]: row.logistics_rating,
-      [`${t('logistics')} Comment`]: row.logistics_comment || '',
-      [t('materials')]: row.materials_rating,
-      [`${t('materials')} Comment`]: row.materials_comment || '',
-      [t('overall_rating')]: row.overall_rating,
-      [`${t('overall_rating')} Comment`]: row.overall_comment || '',
-      [t('additional_comments')]: row.comments || '',
-    }));
+    const rows = data.evaluations.map((row) => {
+      const ratings = row.responses?.ratings || {};
+      const open = row.responses?.open || {};
+      
+      return {
+        [t('participant_code') || 'Participant Code']: row.user_id ? row.user_id.split('-')[0].toUpperCase() : '',
+        [t('representation') || 'Representation']: row.users?.representation || '',
+        [t('job_function') || 'Job Function']: row.users?.job_function || '',
+        [t('eval_q1') || 'Q1']: ratings.q1 || '',
+        [t('eval_q2') || 'Q2']: ratings.q2 || '',
+        [t('eval_q3') || 'Q3']: ratings.q3 || '',
+        [t('eval_q4') || 'Q4']: ratings.q4 || '',
+        [t('eval_q5') || 'Q5']: ratings.q5 || '',
+        [t('eval_q6') || 'Q6']: ratings.q6 || '',
+        [t('eval_q7') || 'Q7']: ratings.q7 || '',
+        [t('eval_q8') || 'Q8']: ratings.q8 || '',
+        [t('eval_q9') || 'Q9']: ratings.q9 || '',
+        [t('eval_q10') || 'Q10']: ratings.q10 || '',
+        [t('eval_q11') || 'Q11']: ratings.q11 || '',
+        [t('eval_q12') || 'Q12']: ratings.q12 || '',
+        [t('eval_q13') || 'Q13']: ratings.q13 || '',
+        [t('eval_q14') || 'Q14']: ratings.q14 || '',
+        [t('eval_o1') || 'Open 1']: open.o1 || '',
+        [t('eval_o2') || 'Open 2']: open.o2 || '',
+        [t('eval_o3') || 'Open 3']: open.o3 || '',
+        [t('eval_o4') || 'Open 4']: open.o4 || '',
+      };
+    });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), t('evaluation'));
   }
 

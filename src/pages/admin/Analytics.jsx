@@ -49,17 +49,14 @@ export default function AdminAnalytics() {
     post: r.post_max > 0 ? Math.round((r.post_score / r.post_max) * 100) : 0,
   }));
 
-  // Build eval radar data
-  const evalCategories = [
-    { label: t('content_quality'), key: 'content_rating' },
-    { label: t('trainer_performance'), key: 'trainer_rating' },
-    { label: t('logistics'), key: 'logistics_rating' },
-    { label: t('materials'), key: 'materials_rating' },
-    { label: t('overall_rating'), key: 'overall_rating' },
-  ];
+  // Build eval bar data
+  const evalCategories = [1,2,3,4,5,6,7,8,9,10,11,12,13,14].map(i => ({
+    label: `Q${i}`,
+    key: `q${i}`
+  }));
   const evalChartData = evalCategories.map(({ label, key }) => {
-    const vals = evaluations.map(e => e[key]).filter(Boolean);
-    return { subject: label, avg: vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2) : 0, fullMark: 5 };
+    const vals = evaluations.map(e => e.responses?.ratings?.[key]).filter(Boolean);
+    return { subject: label, avg: vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2) : 0, fullMark: 4 };
   });
 
   const tooltipStyle = {
@@ -130,29 +127,30 @@ export default function AdminAnalytics() {
             </div>
           )}
 
-          {/* Evaluation Radar */}
+          {/* Evaluation Bar Chart */}
           {evaluations.length > 0 && (
             <div className="card">
               <h3 className="card-title" style={{ marginBottom: 20 }}>
                 {t('evaluation_averages')} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>({evaluations.length} {t('responses')})</span>
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'center' }}>
-                <ResponsiveContainer width="100%" height={280}>
-                  <RadarChart data={evalChartData}>
-                    <PolarGrid stroke="#2a2a3a" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#8b8ba8', fontSize: 12 }} />
-                    <Radar name="Average" dataKey="avg" stroke="#6366f1" fill="#6366f1" fillOpacity={0.25} />
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24, alignItems: 'start' }}>
+                <ResponsiveContainer width="100%" height={380}>
+                  <BarChart data={evalChartData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a3a" horizontal={false} />
+                    <XAxis type="number" domain={[0, 4]} stroke="#8b8ba8" fontSize={12} />
+                    <YAxis dataKey="subject" type="category" stroke="#8b8ba8" fontSize={12} width={40} />
                     <Tooltip {...tooltipStyle} />
-                  </RadarChart>
+                    <Bar dataKey="avg" name="Average (Out of 4)" fill="#6366f1" radius={[0, 4, 4, 0]} />
+                  </BarChart>
                 </ResponsiveContainer>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--bg-secondary)', padding: 16, borderRadius: 'var(--radius-md)' }}>
                   {evalChartData.map(d => (
                     <div key={d.subject} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ width: 80, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{d.subject}</span>
-                      <div style={{ flex: 1, background: 'var(--bg-secondary)', borderRadius: 4, height: 8, overflow: 'hidden' }}>
-                        <div style={{ width: `${(d.avg / 5) * 100}%`, height: '100%', background: 'var(--primary)', borderRadius: 4, transition: 'width 0.5s ease' }} />
+                      <span style={{ width: 30, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{d.subject}</span>
+                      <div style={{ flex: 1, background: 'var(--bg-primary)', borderRadius: 4, height: 8, overflow: 'hidden' }}>
+                        <div style={{ width: `${(d.avg / 4) * 100}%`, height: '100%', background: 'var(--primary)', borderRadius: 4 }} />
                       </div>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-light)', width: 36 }}>{d.avg}</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary-light)', width: 28, textAlign: 'right' }}>{d.avg}</span>
                     </div>
                   ))}
                 </div>
