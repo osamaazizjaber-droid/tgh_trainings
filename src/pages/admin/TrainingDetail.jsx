@@ -121,15 +121,21 @@ export default function AdminTrainingDetail() {
 
   const handleDownloadPdf = async (student) => {
     setDownloadingPdf(student.user_id);
-    const { data: answers } = await supabase.from('answers')
-      .select('*, choices(choice_text, is_correct)')
-      .eq('user_id', student.user_id);
-    
-    const qIds = new Set(questions.map(q => q.id));
-    const relevantAnswers = (answers || []).filter(a => qIds.has(a.question_id));
+    try {
+      const { data: answers } = await supabase.from('answers')
+        .select('*, choices(choice_text, is_correct)')
+        .eq('user_id', student.user_id);
 
-    exportStudentTestPdf(student, training, questions, relevantAnswers, t);
-    setDownloadingPdf(false);
+      const qIds = new Set(questions.map(q => q.id));
+      const relevantAnswers = (answers || []).filter(a => qIds.has(a.question_id));
+
+      exportStudentTestPdf(student, training, questions, relevantAnswers, t);
+    } catch (err) {
+      console.error('PDF error:', err);
+      alert('PDF generation failed: ' + err.message);
+    } finally {
+      setDownloadingPdf(false);
+    }
   };
 
   const handleGrade = async (student) => {

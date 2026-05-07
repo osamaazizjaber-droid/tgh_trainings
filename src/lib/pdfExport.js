@@ -1,5 +1,5 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export const exportStudentTestPdf = (student, training, questions, answers, t) => {
   const doc = new jsPDF();
@@ -24,25 +24,22 @@ export const exportStudentTestPdf = (student, training, questions, answers, t) =
   const tableData = questions.map((q) => {
     const ans = answers.find(a => a.question_id === q.id);
 
-    // Determine question type correctly (question_type = 'mcq' | 'text')
     const isMCQ = q.question_type === 'mcq';
 
     let studentAnswerText = 'No Answer';
-    let result = '—';
-    let earnedPoints = '—';
+    let result = '-';
+    let earnedPoints = '-';
     const maxPoints = q.points;
 
     if (ans) {
       if (isMCQ) {
-        // MCQ: answer stored via choice_id, joined as choices{choice_text, is_correct}
         studentAnswerText = ans.choices?.choice_text || 'No Answer';
         const isCorrect   = !!ans.choices?.is_correct;
         result            = isCorrect ? 'Correct' : 'Incorrect';
         earnedPoints      = isCorrect ? maxPoints : 0;
       } else {
-        // Open-ended: answer stored as answer_text, score via manual_score
         studentAnswerText = ans.answer_text || 'No Answer';
-        result            = '—';
+        result            = '-';
         earnedPoints      = (ans.manual_score !== null && ans.manual_score !== undefined)
           ? ans.manual_score
           : 'Ungraded';
@@ -57,7 +54,7 @@ export const exportStudentTestPdf = (student, training, questions, answers, t) =
     ];
   });
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 64,
     head: [['Question', 'Student Answer', 'Result', 'Points']],
     body: tableData,

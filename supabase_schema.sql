@@ -237,8 +237,9 @@ left join attendance a on a.training_id = t.id
 group by t.id, t.title, a.day_number
 order by t.id, a.day_number;
 
--- Pre vs Post score comparison
-create or replace view test_score_comparison as
+-- Pre vs Post score comparison (includes manual_score for open-ended questions)
+drop view if exists test_score_comparison;
+create view test_score_comparison as
 select
   u.id as user_id,
   concat_ws(' ', u.first_name, u.second_name, u.third_name, u.fourth_name) as user_name,
