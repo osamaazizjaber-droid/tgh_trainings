@@ -129,7 +129,7 @@ export default function AdminTrainingDetail() {
       const qIds = new Set(questions.map(q => q.id));
       const relevantAnswers = (answers || []).filter(a => qIds.has(a.question_id));
 
-      exportStudentTestPdf(student, training, questions, relevantAnswers, t);
+      await exportStudentTestPdf(student, training, questions, relevantAnswers, t);
     } catch (err) {
       console.error('PDF error:', err);
       alert('PDF generation failed: ' + err.message);
