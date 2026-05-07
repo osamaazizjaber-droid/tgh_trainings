@@ -3,146 +3,157 @@ import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 
 /**
- * Renders one certificate as an HTML page, captures it with html2canvas,
- * and adds it as a full-page image — fully supports Arabic text.
- *
- * Template: place your image at /public/certificate-template.png
- * The template is used as a background; text/QR are overlaid on top.
- *
- * ── Adjust the CSS positions below to match your template layout ──
+ * Builds the certificate HTML string (used for both live preview and PDF export).
+ * All images must be data URLs for html2canvas to work.
  */
-const POSITIONS = {
-  // Name block — distance from top of the certificate card
-  nameTop:    '47%',   // ← move up/down
-  nameLeft:   '50%',   // ← keep centred or shift left/right
+export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataUrl) => {
+  const {
+    leftLogo    = null,
+    rightLogo   = null,
+    bodyText    = '',
+    pmName      = '',
+    pmTitle     = 'Project Manager',
+    trainerName = '',
+  } = config;
 
-  // Training title
-  titleTop:   '58%',
-  titleLeft:  '50%',
+  const logoBox = (label) => `
+    <div style="width:140px;height:64px;border:2px dashed #d1d5db;border-radius:6px;
+      display:flex;align-items:center;justify-content:center;
+      color:#9ca3af;font-size:11px;font-family:Arial;">${label}</div>`;
 
-  // Certificate code
-  codeTop:    '67%',
-  codeLeft:   '50%',
+  return `
+    <div style="
+      width:1056px;height:748px;background:#ffffff;position:relative;
+      overflow:hidden;font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+    ">
+      <!-- Right dark-green decorative panel -->
+      <div style="position:absolute;right:0;top:0;width:145px;height:100%;background:#1a3a2a;
+        clip-path:polygon(35% 0,100% 0,100% 100%,0% 100%);"></div>
 
-  // QR code
-  qrBottom:   '6%',
-  qrRight:    '5%',
-  qrSize:     '100px',
+      <!-- Orange lower accent -->
+      <div style="position:absolute;right:0;bottom:0;width:145px;height:42%;background:#f59e0b;
+        clip-path:polygon(35% 0,100% 0,100% 100%,0% 100%);"></div>
+
+      <!-- Main content -->
+      <div style="position:absolute;left:0;top:0;right:100px;bottom:0;padding:30px 52px;
+        display:flex;flex-direction:column;">
+
+        <!-- Logos row -->
+        <div style="display:flex;justify-content:space-between;align-items:center;height:80px;margin-bottom:12px;">
+          ${leftLogo
+            ? `<img src="${leftLogo}" style="max-height:70px;max-width:170px;object-fit:contain;" />`
+            : logoBox('Left Logo')}
+          ${rightLogo
+            ? `<img src="${rightLogo}" style="max-height:70px;max-width:170px;object-fit:contain;" />`
+            : logoBox('Right Logo')}
+        </div>
+
+        <!-- Title -->
+        <div style="text-align:center;font-size:30px;font-weight:900;letter-spacing:0.1em;
+          color:#111827;margin-bottom:10px;text-transform:uppercase;">
+          Certificate of Participation
+        </div>
+
+        <!-- Subtitle -->
+        <div style="text-align:center;font-size:17px;color:#374151;font-style:italic;margin-bottom:10px;">
+          This is to certify that
+        </div>
+
+        <!-- Name -->
+        <div style="text-align:center;font-size:34px;color:#d97706;font-style:italic;
+          letter-spacing:0.02em;margin-bottom:6px;direction:auto;">
+          ${userName}
+        </div>
+
+        <!-- Dotted underline -->
+        <div style="border-bottom:2px dotted #9ca3af;margin:0 60px 14px;"></div>
+
+        <!-- Body text -->
+        <div style="font-size:14.5px;line-height:1.75;text-align:justify;color:#111827;
+          font-weight:700;font-family:Arial,sans-serif;flex:1;direction:auto;overflow:hidden;">
+          ${bodyText}
+        </div>
+
+        <!-- Signatures -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;
+          padding-top:10px;margin-top:10px;">
+          <div style="text-align:center;min-width:160px;">
+            <div style="font-size:18px;color:#d97706;font-style:italic;direction:auto;">
+              ${trainerName || '— — —'}
+            </div>
+            <div style="border-top:1px solid #d1d5db;padding-top:5px;margin-top:4px;
+              font-size:13px;color:#374151;font-family:Arial,sans-serif;">Trainer</div>
+          </div>
+          <div style="text-align:center;min-width:160px;">
+            <div style="font-size:16px;font-weight:700;font-family:Arial,sans-serif;direction:auto;">
+              ${pmName || '— — —'}
+            </div>
+            <div style="border-top:1px solid #d1d5db;padding-top:5px;margin-top:4px;
+              font-size:13px;color:#374151;font-family:Arial,sans-serif;">${pmTitle}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QR on orange box -->
+      ${qrDataUrl ? `
+        <div style="position:absolute;right:6px;bottom:6px;width:115px;height:115px;
+          background:#f59e0b;display:flex;flex-direction:column;align-items:center;
+          justify-content:center;padding:6px;">
+          <img src="${qrDataUrl}" style="width:88px;height:88px;" />
+          <div style="font-size:9px;color:#1a1a1a;margin-top:2px;font-family:Arial;font-weight:700;">
+            SCAN TO VERIFY
+          </div>
+        </div>` : ''}
+
+      <!-- Cert code small text -->
+      <div style="position:absolute;bottom:10px;left:52px;font-size:10px;
+        color:#9ca3af;font-family:'Courier New',monospace;letter-spacing:0.06em;">
+        ${certCode}
+      </div>
+    </div>`;
 };
 
-const buildCertHtml = (userName, trainingTitle, certCode, projectName, qrDataUrl, templateUrl) => `
-  <div style="
-    position: relative;
-    width: 1123px; height: 794px;
-    font-family: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
-    overflow: hidden;
-  ">
-    <!-- Background template -->
-    ${templateUrl
-      ? `<img src="${templateUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />`
-      : `<div style="position:absolute;inset:0;background:#fff;border:8px solid #4f46e5;"></div>
-         <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
-           <div style="text-align:center;color:#4f46e5;font-size:48px;font-weight:900;opacity:0.04;transform:rotate(-25deg);user-select:none;">
-             CERTIFICATE
-           </div>
-         </div>`
-    }
-
-    <!-- Name -->
-    <div style="
-      position: absolute;
-      top: ${POSITIONS.nameTop};
-      left: ${POSITIONS.nameLeft};
-      transform: translate(-50%, -50%);
-      text-align: center;
-      font-size: 32px;
-      font-weight: 700;
-      color: #1e1b4b;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
-      direction: auto;
-    ">${userName}</div>
-
-    <!-- Training title -->
-    <div style="
-      position: absolute;
-      top: ${POSITIONS.titleTop};
-      left: ${POSITIONS.titleLeft};
-      transform: translate(-50%, -50%);
-      text-align: center;
-      font-size: 18px;
-      font-weight: 500;
-      color: #374151;
-      max-width: 700px;
-      direction: auto;
-    ">${trainingTitle}</div>
-
-    <!-- Certificate code -->
-    <div style="
-      position: absolute;
-      top: ${POSITIONS.codeTop};
-      left: ${POSITIONS.codeLeft};
-      transform: translate(-50%, -50%);
-      text-align: center;
-      font-size: 13px;
-      color: #6b7280;
-      font-family: 'Courier New', monospace;
-      letter-spacing: 0.08em;
-    ">${certCode} &nbsp;|&nbsp; ${projectName}</div>
-
-    <!-- QR code -->
-    ${qrDataUrl ? `
-    <div style="
-      position: absolute;
-      bottom: ${POSITIONS.qrBottom};
-      right:  ${POSITIONS.qrRight};
-      text-align: center;
-    ">
-      <img src="${qrDataUrl}" style="width:${POSITIONS.qrSize};height:${POSITIONS.qrSize};" />
-      <div style="font-size:10px;color:#6b7280;margin-top:2px;">Scan to Verify</div>
-    </div>` : ''}
-  </div>
-`;
-
-export const generateCertificatesPdf = async (certificates, attendanceByUser, training, baseUrl) => {
+/**
+ * Generates and downloads a PDF containing all issued certificates.
+ * @param {Array} certificates
+ * @param {Object} attendanceByUser
+ * @param {Object} training
+ * @param {string} baseUrl
+ * @param {Object} config  - { leftLogo, rightLogo, bodyText, pmName, pmTitle, trainerName }
+ */
+export const generateCertificatesPdf = async (
+  certificates, attendanceByUser, training, baseUrl, config = {}
+) => {
   if (!certificates || certificates.length === 0) return;
 
-  // Pre-check template image
-  const templateUrl = await new Promise((resolve) => {
-    const img = new Image();
-    img.onload  = () => resolve('/certificate-template.png');
-    img.onerror = () => resolve(null);
-    img.src = '/certificate-template.png';
-  });
-
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }); // 297×210mm
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
   for (let i = 0; i < certificates.length; i++) {
     const cert   = certificates[i];
     const record = attendanceByUser[cert.user_id];
     if (!record || !record.user) continue;
 
-    const userName    = [record.user.first_name, record.user.second_name, record.user.third_name, record.user.fourth_name].filter(Boolean).join(' ');
-    const projectName = training.activities?.projects?.name || 'TGH';
-    const verifyUrl   = `${baseUrl}/verify?code=${cert.certificate_code}`;
+    const userName = [
+      record.user.first_name, record.user.second_name,
+      record.user.third_name, record.user.fourth_name,
+    ].filter(Boolean).join(' ');
 
-    // Generate QR
-    let qrDataUrl = null;
+    const verifyUrl = `${baseUrl}/verify?code=${cert.certificate_code}`;
+    let qrDataUrl   = null;
     try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 180 }); } catch (_) {}
 
-    // Render certificate HTML → canvas → image
     const container = document.createElement('div');
     container.style.cssText = 'position:fixed;left:-9999px;top:0;';
-    container.innerHTML = buildCertHtml(userName, training.title, cert.certificate_code, projectName, qrDataUrl, templateUrl);
+    container.innerHTML = buildCertHtml(
+      userName, training.title, cert.certificate_code, config, qrDataUrl
+    );
     document.body.appendChild(container);
 
     try {
       const canvas  = await html2canvas(container.firstElementChild, {
-        scale: 2, useCORS: true, logging: false,
-        width: 1123, height: 794,
+        scale: 2, useCORS: true, logging: false, width: 1056, height: 748,
       });
       const imgData = canvas.toDataURL('image/png');
-
       if (i > 0) doc.addPage();
       doc.addImage(imgData, 'PNG', 0, 0, 297, 210);
     } finally {

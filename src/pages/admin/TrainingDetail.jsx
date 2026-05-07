@@ -6,7 +6,7 @@ import { format, addDays } from 'date-fns';
 import { useLanguage } from '../../lib/LanguageContext';
 import { exportAttendance, exportTestResults, exportEvaluations, exportAll } from '../../lib/export';
 import { exportStudentTestPdf } from '../../lib/pdfExport';
-import { generateCertificatesPdf } from '../../lib/certificateExport';
+import { generateCertificatesPdf, buildCertHtml } from '../../lib/certificateExport';
 
 const BASE_URL = window.location.origin;
 
@@ -62,6 +62,13 @@ export default function AdminTrainingDetail() {
   const [manualScores, setManualScores] = useState({});
   const [savingGrades, setSavingGrades] = useState(false);
 
+  // Certificate designer config (persisted in localStorage)
+  const [certLeftLogo,  setCertLeftLogo]  = useState(() => localStorage.getItem('cert_left_logo')  || null);
+  const [certRightLogo, setCertRightLogo] = useState(() => localStorage.getItem('cert_right_logo') || null);
+  const [certBodyText,  setCertBodyText]  = useState(() => localStorage.getItem('cert_body_text')  || 'has participated in the training organized by Triangle Génération Humanitaire (TGH).');
+  const [certPmName,    setCertPmName]    = useState(() => localStorage.getItem('cert_pm_name')    || '');
+  const [certPmTitle,   setCertPmTitle]   = useState(() => localStorage.getItem('cert_pm_title')   || 'Project Manager');
+
   // Question form state
   const [showQForm, setShowQForm] = useState(false);
   const [qType, setQType] = useState('pre');
@@ -76,7 +83,7 @@ export default function AdminTrainingDetail() {
   const fetchAll = async () => {
     setLoading(true);
     const [{ data: t }, { data: att }, { data: q }, { data: ev }, { data: tr }, { data: certs }] = await Promise.all([
-      supabase.from('trainings').select('*, activities(name, projects(name))').eq('id', id).single(),
+      supabase.from('trainings').select('*, activities(name, projects(name)), trainers(full_name)').eq('id', id).single(),
       supabase.from('attendance').select('*, users(first_name, second_name, third_name, fourth_name, phone, gender, dob, age, governorate, district, subdistrict, village, representation, job_function)').eq('training_id', id).order('day_number'),
       supabase.from('questions').select('*, choices(*)').eq('training_id', id).order('order_num'),
       supabase.from('evaluations').select('*, users(first_name, second_name, third_name, fourth_name, phone, representation, job_function)').eq('training_id', id),
@@ -175,6 +182,26 @@ export default function AdminTrainingDetail() {
     }
     setGradingStudent(null);
     fetchAll();
+  };
+
+  const handleLogoUpload = (side, file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const url = e.target.result;
+      if (side === 'left') { setCertLeftLogo(url);  localStorage.setItem('cert_left_logo',  url); }
+      else                  { setCertRightLogo(url); localStorage.setItem('cert_right_logo', url); }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const certConfig = {
+    leftLogo:    certLeftLogo,
+    rightLogo:   certRightLogo,
+    bodyText:    certBodyText,
+    pmName:      certPmName,
+    pmTitle:     certPmTitle,
+    trainerName: training?.trainers?.full_name || '',
   };
 
   const saveQuestion = async () => {
@@ -618,85 +645,120 @@ export default function AdminTrainingDetail() {
 
       {/* ── CERTIFICATES TAB ── */}
       {tab === 'certificates' && (
-        <div className="card">
-          <div className="card-header" style={{ alignItems: 'flex-start' }}>
-            <div>
-              <h3 className="card-title">Issue Certificates</h3>
-              <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: 4 }}>
-                Certificates generated for participants meeting the minimum attendance requirement.
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label style={{ fontSize: '0.75rem' }}>Min. Days Attended</label>
-                <select 
-                  value={minDaysRequired} 
-                  onChange={e => setMinDaysRequired(parseInt(e.target.value))}
-                  style={{ padding: '6px 12px', fontSize: '0.85rem' }}
-                >
-                  {Array.from({ length: training.days_count }).map((_, i) => (
-                    <option key={i+1} value={i+1}>{i+1} Day{i > 0 ? 's' : ''}</option>
-                  ))}
-                </select>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* ── Designer settings row ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+            {/* Logos */}
+            <div className="card">
+              <h3 className="card-title" style={{ marginBottom: 16 }}>🖼 Logos</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {[['left', certLeftLogo, setCertLeftLogo], ['right', certRightLogo, setCertRightLogo]].map(([side, val, setter]) => (
+                  <div key={side}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6, textTransform: 'capitalize' }}>
+                      {side === 'left' ? '⬅ Left Logo (Donor)' : '➡ Right Logo (NGO)'}
+                    </label>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      {val && <img src={val} alt={side} style={{ height: 48, maxWidth: 100, objectFit: 'contain', border: '1px solid var(--border)', borderRadius: 6, padding: 4, background: '#fff' }} />}
+                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
+                        {val ? '🔄 Change' : '⬆ Upload'}
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleLogoUpload(side, e.target.files[0])} />
+                      </label>
+                      {val && <button className="btn btn-ghost btn-sm" onClick={() => { setter(null); localStorage.removeItem(`cert_${side}_logo`); }}>✕</button>}
+                    </div>
+                  </div>
+                ))}
+                <div>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>🧑‍🏫 Trainer (auto)</label>
+                  <div style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                    {training?.trainers?.full_name || <em style={{ color: 'var(--text-muted)' }}>No trainer assigned</em>}
+                  </div>
+                </div>
               </div>
-              <button 
-                className="btn btn-primary btn-sm" 
-                onClick={issueCertificates}
-                disabled={issuingCerts}
-              >
-                {issuingCerts ? <span className="spinner spinner-sm" /> : '+ Issue Certificates'}
-              </button>
-              <button 
-                className="btn btn-secondary btn-sm" 
-                onClick={() => generateCertificatesPdf(certificates, attendanceByUser, training, BASE_URL)}
-                disabled={certificates.length === 0}
-              >
-                ⬇ Download PDFs
-              </button>
+            </div>
+
+            {/* Text fields */}
+            <div className="card">
+              <h3 className="card-title" style={{ marginBottom: 16 }}>✏️ Text Content</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Body Paragraph</label>
+                  <textarea rows={4} value={certBodyText}
+                    onChange={e => { setCertBodyText(e.target.value); localStorage.setItem('cert_body_text', e.target.value); }}
+                    placeholder="has participated in the training..."
+                    style={{ fontSize: '0.85rem', resize: 'vertical' }}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Project Manager / Director Name</label>
+                  <input value={certPmName} onChange={e => { setCertPmName(e.target.value); localStorage.setItem('cert_pm_name', e.target.value); }} placeholder="e.g. Hardi Fadhil" />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Title</label>
+                  <input value={certPmTitle} onChange={e => { setCertPmTitle(e.target.value); localStorage.setItem('cert_pm_title', e.target.value); }} placeholder="e.g. Project Manager" />
+                </div>
+              </div>
             </div>
           </div>
-          
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Days Attended</th>
-                  <th>Status</th>
-                  <th>Certificate Code</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.values(attendanceByUser).map(record => {
-                  const cert = certificates.find(c => c.user_id === record.user_id);
-                  const name = [record.user?.first_name, record.user?.second_name, record.user?.third_name, record.user?.fourth_name].filter(Boolean).join(' ');
-                  const isEligible = record.count >= minDaysRequired;
-                  
-                  return (
-                    <tr key={record.user_id}>
-                      <td style={{ fontWeight: 600 }}>{name}</td>
-                      <td>
-                        <span className={`badge ${isEligible ? 'badge-success' : 'badge-gray'}`}>
-                          {record.count} / {training.days_count}
-                        </span>
-                      </td>
-                      <td>
-                        {cert ? (
-                          <span className="badge badge-success">Issued</span>
-                        ) : isEligible ? (
-                          <span className="badge badge-warning">Pending</span>
-                        ) : (
-                          <span className="badge badge-danger">Ineligible</span>
-                        )}
-                      </td>
-                      <td style={{ fontFamily: 'monospace' }}>
-                        {cert ? cert.certificate_code : '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+
+          {/* ── Live Preview ── */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 className="card-title">👁 Live Preview</h3>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Showing sample name — actual names filled on export</span>
+            </div>
+            <div style={{ background: '#111', borderRadius: 10, padding: 16, display: 'flex', justifyContent: 'center', overflowX: 'auto' }}>
+              <div style={{ width: 756, height: 536, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, transformOrigin: 'top left', transform: 'scale(0.715)', width: 1056, height: 748, pointerEvents: 'none' }}
+                  dangerouslySetInnerHTML={{ __html: buildCertHtml('أحمد محمد علي الكريمي', training.title, 'TGH-PREVIEW-001', certConfig, null) }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Issue & Download controls ── */}
+          <div className="card">
+            <div className="card-header" style={{ alignItems: 'flex-start' }}>
+              <div>
+                <h3 className="card-title">🎓 Issue Certificates</h3>
+                <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: 4 }}>Participants meeting the minimum attendance requirement.</p>
+              </div>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label style={{ fontSize: '0.75rem' }}>Min. Days Attended</label>
+                  <select value={minDaysRequired} onChange={e => setMinDaysRequired(parseInt(e.target.value))} style={{ padding: '6px 12px', fontSize: '0.85rem' }}>
+                    {Array.from({ length: training.days_count }).map((_, i) => (<option key={i+1} value={i+1}>{i+1} Day{i > 0 ? 's' : ''}</option>))}
+                  </select>
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={issueCertificates} disabled={issuingCerts}>
+                  {issuingCerts ? <span className="spinner spinner-sm" /> : '+ Issue Certificates'}
+                </button>
+                <button className="btn btn-success btn-sm" onClick={() => generateCertificatesPdf(certificates, attendanceByUser, training, BASE_URL, certConfig)} disabled={certificates.length === 0}>
+                  ⬇ Download PDFs
+                </button>
+              </div>
+            </div>
+            <div className="table-wrapper">
+              <table>
+                <thead><tr><th>Name</th><th>Days Attended</th><th>Status</th><th>Certificate Code</th></tr></thead>
+                <tbody>
+                  {Object.values(attendanceByUser).map(record => {
+                    const cert = certificates.find(c => c.user_id === record.user_id);
+                    const name = [record.user?.first_name, record.user?.second_name, record.user?.third_name, record.user?.fourth_name].filter(Boolean).join(' ');
+                    const isEligible = record.count >= minDaysRequired;
+                    return (
+                      <tr key={record.user_id}>
+                        <td style={{ fontWeight: 600 }}>{name}</td>
+                        <td><span className={`badge ${isEligible ? 'badge-success' : 'badge-gray'}`}>{record.count} / {training.days_count}</span></td>
+                        <td>{cert ? <span className="badge badge-success">Issued</span> : isEligible ? <span className="badge badge-warning">Pending</span> : <span className="badge badge-danger">Ineligible</span>}</td>
+                        <td style={{ fontFamily: 'monospace' }}>{cert ? cert.certificate_code : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
