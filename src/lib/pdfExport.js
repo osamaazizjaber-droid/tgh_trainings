@@ -3,57 +3,78 @@ import 'jspdf-autotable';
 
 export const exportStudentTestPdf = (student, training, questions, answers, t) => {
   const doc = new jsPDF();
-  
+
+  // ── Header ──────────────────────────────────────────────────
   doc.setFontSize(16);
-  // Using basic ascii for the title if possible or let it handle unicode
+  doc.setFont('helvetica', 'bold');
   doc.text(`Test Results: ${training.title}`, 14, 20);
-  
-  doc.setFontSize(12);
-  doc.text(`Student: ${student.user_name}`, 14, 30);
-  doc.text(`Phone: ${student.phone}`, 14, 38);
-  
-  const prePct = student.pre_max > 0 ? Math.round((student.pre_score / student.pre_max) * 100) : 0;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text(`Student: ${student.user_name}`, 14, 32);
+  doc.text(`Phone: ${student.phone}`, 14, 39);
+
+  const prePct  = student.pre_max  > 0 ? Math.round((student.pre_score  / student.pre_max)  * 100) : 0;
   const postPct = student.post_max > 0 ? Math.round((student.post_score / student.post_max) * 100) : 0;
 
-  doc.text(`Pre-Test Score: ${student.pre_score}/${student.pre_max} (${prePct}%)`, 14, 46);
-  doc.text(`Post-Test Score: ${student.post_score}/${student.post_max} (${postPct}%)`, 14, 54);
+  doc.text(`Pre-Test Score:  ${student.pre_score}/${student.pre_max} (${prePct}%)`,   14, 48);
+  doc.text(`Post-Test Score: ${student.post_score}/${student.post_max} (${postPct}%)`, 14, 55);
 
-  const tableData = questions.map((q, idx) => {
+  // ── Question table ────────────────────────────────────────────
+  const tableData = questions.map((q) => {
     const ans = answers.find(a => a.question_id === q.id);
+
+    // Determine question type correctly (question_type = 'mcq' | 'text')
+    const isMCQ = q.question_type === 'mcq';
+
     let studentAnswerText = 'No Answer';
-    let isCorrect = false;
+    let result = '—';
+    let earnedPoints = '—';
+    const maxPoints = q.points;
 
     if (ans) {
-      if (q.question_type === 'mcq' && ans.choices) {
-        studentAnswerText = ans.choices.choice_text;
-        isCorrect = ans.choices.is_correct;
+      if (isMCQ) {
+        // MCQ: answer stored via choice_id, joined as choices{choice_text, is_correct}
+        studentAnswerText = ans.choices?.choice_text || 'No Answer';
+        const isCorrect   = !!ans.choices?.is_correct;
+        result            = isCorrect ? 'Correct' : 'Incorrect';
+        earnedPoints      = isCorrect ? maxPoints : 0;
       } else {
+        // Open-ended: answer stored as answer_text, score via manual_score
         studentAnswerText = ans.answer_text || 'No Answer';
-        isCorrect = true; // For text, we assume it's collected
+        result            = '—';
+        earnedPoints      = (ans.manual_score !== null && ans.manual_score !== undefined)
+          ? ans.manual_score
+          : 'Ungraded';
       }
     }
 
     return [
-      `[${q.type.toUpperCase()}] ${q.question_text}`,
+      `[${isMCQ ? 'MCQ' : 'OPEN'}] ${q.question_text}`,
       studentAnswerText,
-      q.question_type === 'mcq' ? (isCorrect ? 'Correct' : 'Incorrect') : 'N/A',
-      `${q.question_type === 'mcq' ? (isCorrect ? q.points : 0) : '-'} / ${q.points}`
+      result,
+      `${earnedPoints} / ${maxPoints}`,
     ];
   });
 
   doc.autoTable({
-    startY: 65,
+    startY: 64,
     head: [['Question', 'Student Answer', 'Result', 'Points']],
     body: tableData,
     theme: 'grid',
-    styles: { font: 'helvetica', fontSize: 10, cellPadding: 4 },
-    headStyles: { fillColor: [79, 70, 229] }, // var(--primary) equivalent
+    styles: {
+      font: 'helvetica',
+      fontSize: 9,
+      cellPadding: 4,
+      overflow: 'linebreak',
+    },
+    headStyles: { fillColor: [79, 70, 229], fontStyle: 'bold' },
     columnStyles: {
-      0: { cellWidth: 80 },
-      1: { cellWidth: 60 },
-      2: { cellWidth: 20 },
-      3: { cellWidth: 20 }
-    }
+      0: { cellWidth: 72 },
+      1: { cellWidth: 68 },
+      2: { cellWidth: 24 },
+      3: { cellWidth: 22 },
+    },
   });
 
   doc.save(`Test_Results_${student.user_name.replace(/\s+/g, '_')}.pdf`);

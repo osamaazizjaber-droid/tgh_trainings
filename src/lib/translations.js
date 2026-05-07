@@ -190,7 +190,8 @@ export const translations = {
     eval_o3: "Any additional comments or suggestions:",
     eval_o4: "List three new things (information) you learned during the training",
     
-    participant_code: "Participant Code"
+    participant_code: "Participant Code",
+    edit_information: "Edit Information"
   },
   
   ar: {
@@ -384,6 +385,7 @@ export const translations = {
     eval_o3: "أي ملاحظات أو اقتراحات إضافية:",
     eval_o4: "اذكر ثلاثة أشياء (معلومات) جديدة تعلمتها خلال التدريب",
 
-    participant_code: "رمز المشارك"
+    participant_code: "رمز المشارك",
+    edit_information: "تعديل المعلومات"
   }
 };

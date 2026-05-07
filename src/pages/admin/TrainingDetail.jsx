@@ -56,6 +56,12 @@ export default function AdminTrainingDetail() {
   const [issuingCerts, setIssuingCerts] = useState(false);
   const [minDaysRequired, setMinDaysRequired] = useState(1);
 
+  // Manual grading state
+  const [gradingStudent, setGradingStudent] = useState(null);
+  const [openAnswers, setOpenAnswers] = useState([]);
+  const [manualScores, setManualScores] = useState({});
+  const [savingGrades, setSavingGrades] = useState(false);
+
   // Question form state
   const [showQForm, setShowQForm] = useState(false);
   const [qType, setQType] = useState('pre');
@@ -124,6 +130,33 @@ export default function AdminTrainingDetail() {
 
     exportStudentTestPdf(student, training, questions, relevantAnswers, t);
     setDownloadingPdf(false);
+  };
+
+  const handleGrade = async (student) => {
+    const openQIds = questions.filter(q => q.question_type === 'text').map(q => q.id);
+    if (!openQIds.length) return;
+    const { data: ans } = await supabase
+      .from('answers')
+      .select('*')
+      .eq('user_id', student.user_id)
+      .in('question_id', openQIds);
+    setOpenAnswers(ans || []);
+    const initialScores = {};
+    (ans || []).forEach(a => { initialScores[a.id] = a.manual_score ?? ''; });
+    setManualScores(initialScores);
+    setGradingStudent(student);
+  };
+
+  const saveGrades = async () => {
+    setSavingGrades(true);
+    for (const [answerId, score] of Object.entries(manualScores)) {
+      if (score !== '' && score !== null && score !== undefined) {
+        await supabase.from('answers').update({ manual_score: parseInt(score) }).eq('id', answerId);
+      }
+    }
+    setSavingGrades(false);
+    setGradingStudent(null);
+    fetchAll();
   };
 
   const saveQuestion = async () => {
@@ -227,6 +260,8 @@ export default function AdminTrainingDetail() {
 
   const preQs = questions.filter(q => q.type === 'pre');
   const postQs = questions.filter(q => q.type === 'post');
+  const openEndedQs = questions.filter(q => q.question_type === 'text');
+  const hasOpenEnded = openEndedQs.length > 0;
 
   const avgEval = (qId) => {
     const vals = evaluations.map(e => e.responses?.ratings?.[qId]).filter(Boolean);
@@ -431,13 +466,24 @@ export default function AdminTrainingDetail() {
                           </span>
                         </td>
                         <td>
-                          <button 
-                            className="btn btn-secondary btn-sm" 
-                            onClick={() => handleDownloadPdf(r)}
-                            disabled={downloadingPdf === r.user_id}
-                          >
-                            {downloadingPdf === r.user_id ? '...' : '📄 PDF'}
-                          </button>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button 
+                              className="btn btn-secondary btn-sm" 
+                              onClick={() => handleDownloadPdf(r)}
+                              disabled={downloadingPdf === r.user_id}
+                            >
+                              {downloadingPdf === r.user_id ? '...' : '📄 PDF'}
+                            </button>
+                            {hasOpenEnded && (
+                              <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handleGrade(r)}
+                                title="Grade open-ended answers"
+                              >
+                                ✏️ Grade
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -706,6 +752,72 @@ export default function AdminTrainingDetail() {
               <button className="btn btn-ghost" onClick={() => setShowQForm(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={saveQuestion} disabled={savingQ || !qText.trim()}>
                 {savingQ ? <span className="spinner spinner-sm" /> : 'Save Question'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Grading Modal ── */}
+      {gradingStudent && (
+        <div className="modal-overlay" onClick={() => setGradingStudent(null)}>
+          <div className="modal" style={{ maxWidth: 680 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">✏️ Grade Open-Ended: {gradingStudent.user_name}</h3>
+              <button className="btn btn-ghost btn-icon" onClick={() => setGradingStudent(null)}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxHeight: '60vh', overflowY: 'auto', padding: '4px 2px' }}>
+              {openEndedQs.length === 0 && (
+                <p className="text-muted">No open-ended questions in this training.</p>
+              )}
+              {openEndedQs.map(q => {
+                const ans = openAnswers.find(a => a.question_id === q.id);
+                return (
+                  <div key={q.id} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <span className={`badge ${q.type === 'pre' ? 'badge-info' : 'badge-warning'}`} style={{ fontSize: '0.7rem' }}>
+                        {q.type === 'pre' ? 'Pre' : 'Post'}
+                      </span>
+                      <span style={{ fontWeight: 600, fontSize: '0.9rem', flex: 1 }}>{q.question_text}</span>
+                      <span className="badge badge-purple">{q.points} pts</span>
+                    </div>
+                    <div style={{
+                      background: 'var(--bg-card)', border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)', padding: '10px 14px',
+                      fontSize: '0.9rem', color: 'var(--text-secondary)',
+                      marginBottom: 12, minHeight: 52, lineHeight: 1.6,
+                    }}>
+                      {ans?.answer_text
+                        ? ans.answer_text
+                        : <em style={{ opacity: 0.45 }}>No answer provided</em>
+                      }
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                        Score (0 – {q.points}):
+                      </label>
+                      <input
+                        type="number" min={0} max={q.points}
+                        value={ans ? (manualScores[ans.id] ?? '') : ''}
+                        onChange={e => ans && setManualScores(prev => ({ ...prev, [ans.id]: e.target.value }))}
+                        disabled={!ans}
+                        style={{ width: 80, textAlign: 'center' }}
+                      />
+                      {!ans && (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Student did not answer this question</span>
+                      )}
+                      {ans && ans.manual_score !== null && ans.manual_score !== undefined && (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--success)' }}>Previously graded: {ans.manual_score}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setGradingStudent(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={saveGrades} disabled={savingGrades}>
+                {savingGrades ? <span className="spinner spinner-sm" /> : '💾 Save Grades'}
               </button>
             </div>
           </div>
