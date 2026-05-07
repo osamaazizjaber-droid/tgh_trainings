@@ -149,12 +149,24 @@ export default function AdminTrainingDetail() {
 
   const saveGrades = async () => {
     setSavingGrades(true);
+    let hasError = false;
     for (const [answerId, score] of Object.entries(manualScores)) {
       if (score !== '' && score !== null && score !== undefined) {
-        await supabase.from('answers').update({ manual_score: parseInt(score) }).eq('id', answerId);
+        const { error } = await supabase
+          .from('answers')
+          .update({ manual_score: parseInt(score) })
+          .eq('id', answerId);
+        if (error) {
+          console.error('Grade save error:', error);
+          hasError = true;
+        }
       }
     }
     setSavingGrades(false);
+    if (hasError) {
+      alert('Error saving grades. Make sure you have run:\n\nALTER TABLE answers ADD COLUMN IF NOT EXISTS manual_score integer;\n\nin your Supabase SQL Editor.');
+      return;
+    }
     setGradingStudent(null);
     fetchAll();
   };
