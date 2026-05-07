@@ -1,96 +1,152 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
+import html2canvas from 'html2canvas';
+
+/**
+ * Renders one certificate as an HTML page, captures it with html2canvas,
+ * and adds it as a full-page image — fully supports Arabic text.
+ *
+ * Template: place your image at /public/certificate-template.png
+ * The template is used as a background; text/QR are overlaid on top.
+ *
+ * ── Adjust the CSS positions below to match your template layout ──
+ */
+const POSITIONS = {
+  // Name block — distance from top of the certificate card
+  nameTop:    '47%',   // ← move up/down
+  nameLeft:   '50%',   // ← keep centred or shift left/right
+
+  // Training title
+  titleTop:   '58%',
+  titleLeft:  '50%',
+
+  // Certificate code
+  codeTop:    '67%',
+  codeLeft:   '50%',
+
+  // QR code
+  qrBottom:   '6%',
+  qrRight:    '5%',
+  qrSize:     '100px',
+};
+
+const buildCertHtml = (userName, trainingTitle, certCode, projectName, qrDataUrl, templateUrl) => `
+  <div style="
+    position: relative;
+    width: 1123px; height: 794px;
+    font-family: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+    overflow: hidden;
+  ">
+    <!-- Background template -->
+    ${templateUrl
+      ? `<img src="${templateUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />`
+      : `<div style="position:absolute;inset:0;background:#fff;border:8px solid #4f46e5;"></div>
+         <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+           <div style="text-align:center;color:#4f46e5;font-size:48px;font-weight:900;opacity:0.04;transform:rotate(-25deg);user-select:none;">
+             CERTIFICATE
+           </div>
+         </div>`
+    }
+
+    <!-- Name -->
+    <div style="
+      position: absolute;
+      top: ${POSITIONS.nameTop};
+      left: ${POSITIONS.nameLeft};
+      transform: translate(-50%, -50%);
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      color: #1e1b4b;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      direction: auto;
+    ">${userName}</div>
+
+    <!-- Training title -->
+    <div style="
+      position: absolute;
+      top: ${POSITIONS.titleTop};
+      left: ${POSITIONS.titleLeft};
+      transform: translate(-50%, -50%);
+      text-align: center;
+      font-size: 18px;
+      font-weight: 500;
+      color: #374151;
+      max-width: 700px;
+      direction: auto;
+    ">${trainingTitle}</div>
+
+    <!-- Certificate code -->
+    <div style="
+      position: absolute;
+      top: ${POSITIONS.codeTop};
+      left: ${POSITIONS.codeLeft};
+      transform: translate(-50%, -50%);
+      text-align: center;
+      font-size: 13px;
+      color: #6b7280;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.08em;
+    ">${certCode} &nbsp;|&nbsp; ${projectName}</div>
+
+    <!-- QR code -->
+    ${qrDataUrl ? `
+    <div style="
+      position: absolute;
+      bottom: ${POSITIONS.qrBottom};
+      right:  ${POSITIONS.qrRight};
+      text-align: center;
+    ">
+      <img src="${qrDataUrl}" style="width:${POSITIONS.qrSize};height:${POSITIONS.qrSize};" />
+      <div style="font-size:10px;color:#6b7280;margin-top:2px;">Scan to Verify</div>
+    </div>` : ''}
+  </div>
+`;
 
 export const generateCertificatesPdf = async (certificates, attendanceByUser, training, baseUrl) => {
   if (!certificates || certificates.length === 0) return;
 
-  const doc = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: 'a4' // 297 x 210 mm
+  // Pre-check template image
+  const templateUrl = await new Promise((resolve) => {
+    const img = new Image();
+    img.onload  = () => resolve('/certificate-template.png');
+    img.onerror = () => resolve(null);
+    img.src = '/certificate-template.png';
   });
 
-  // Since we assume they have 'certificate-template.png' in public
-  const imgData = '/certificate-template.png';
-  let imageLoaded = false;
-  let logoLoaded = false;
-  
-  try {
-    await new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => { imageLoaded = true; resolve(); };
-      img.onerror = () => { imageLoaded = false; resolve(); };
-      img.src = imgData;
-    });
-    await new Promise((resolve) => {
-      const logo = new Image();
-      logo.onload = () => { logoLoaded = true; resolve(); };
-      logo.onerror = () => { logoLoaded = false; resolve(); };
-      logo.src = '/logo.png';
-    });
-  } catch (e) {}
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }); // 297×210mm
 
   for (let i = 0; i < certificates.length; i++) {
-    const cert = certificates[i];
+    const cert   = certificates[i];
     const record = attendanceByUser[cert.user_id];
     if (!record || !record.user) continue;
 
-    if (i > 0) {
-      doc.addPage();
-    }
+    const userName    = [record.user.first_name, record.user.second_name, record.user.third_name, record.user.fourth_name].filter(Boolean).join(' ');
+    const projectName = training.activities?.projects?.name || 'TGH';
+    const verifyUrl   = `${baseUrl}/verify?code=${cert.certificate_code}`;
 
-    if (imageLoaded) {
-      try {
-        doc.addImage(imgData, 'PNG', 0, 0, 297, 210);
-      } catch (e) {
-        console.warn('Could not add template image', e);
-      }
-    } else {
-      // Fallback simple layout if image not found
-      doc.setLineWidth(2);
-      doc.setDrawColor(79, 70, 229); // Primary color
-      doc.rect(10, 10, 277, 190);
-      doc.setFontSize(36);
-      doc.setTextColor(79, 70, 229);
-      doc.text('CERTIFICATE OF COMPLETION', 148.5, 40, { align: 'center' });
-      
-      doc.setFontSize(16);
-      doc.setTextColor(100, 100, 100);
-      doc.text('This is to certify that', 148.5, 80, { align: 'center' });
-      
-      if (logoLoaded) {
-        doc.addImage('/logo.png', 'PNG', 128.5, 50, 40, 40);
-      }
-    }
+    // Generate QR
+    let qrDataUrl = null;
+    try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 180 }); } catch (_) {}
 
-    const userName = [record.user.first_name, record.user.second_name, record.user.third_name, record.user.fourth_name].filter(Boolean).join(' ');
+    // Render certificate HTML → canvas → image
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;';
+    container.innerHTML = buildCertHtml(userName, training.title, cert.certificate_code, projectName, qrDataUrl, templateUrl);
+    document.body.appendChild(container);
 
-    doc.setFontSize(28);
-    doc.setTextColor(0, 0, 0);
-    // Adjusted Y coordinate assuming the user will tweak this depending on their template
-    doc.text(userName, 148.5, 115, { align: 'center' }); 
-
-    doc.setFontSize(16);
-    doc.setTextColor(50, 50, 50);
-    doc.text(training.title, 148.5, 135, { align: 'center' });
-    
-    doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Certificate Code: ${cert.certificate_code}`, 148.5, 145, { align: 'center' });
-    doc.text(`Project: ${training.activities?.projects?.name || 'N/A'}`, 148.5, 152, { align: 'center' });
-
-    // Generate QR Code data URL
-    const verifyUrl = `${baseUrl}/verify?code=${cert.certificate_code}`;
     try {
-      const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 200 });
-      // Place QR code in the bottom right corner (adjust as needed for template)
-      doc.addImage(qrDataUrl, 'PNG', 230, 150, 40, 40);
-      
-      // Instruction to scan
-      doc.setFontSize(8);
-      doc.text('Scan to Verify', 250, 195, { align: 'center' });
-    } catch (err) {
-      console.error('Error generating QR', err);
+      const canvas  = await html2canvas(container.firstElementChild, {
+        scale: 2, useCORS: true, logging: false,
+        width: 1123, height: 794,
+      });
+      const imgData = canvas.toDataURL('image/png');
+
+      if (i > 0) doc.addPage();
+      doc.addImage(imgData, 'PNG', 0, 0, 297, 210);
+    } finally {
+      document.body.removeChild(container);
     }
   }
 
