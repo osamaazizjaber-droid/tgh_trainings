@@ -362,6 +362,19 @@ export default function AdminTrainingDetail() {
     setIssuingCerts(false);
   };
 
+  const undoIssueCertificates = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL issued certificates for this training? This cannot be undone.')) return;
+    
+    setIssuingCerts(true);
+    const { error } = await supabase.from('certificates').delete().eq('training_id', id);
+    if (error) {
+      alert('Error deleting certificates: ' + error.message);
+    } else {
+      fetchAll();
+    }
+    setIssuingCerts(false);
+  };
+
   const isExpired = training?.qr_expires_at ? new Date(training.qr_expires_at) < new Date() : true;
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
@@ -815,6 +828,11 @@ export default function AdminTrainingDetail() {
                 <button className="btn btn-primary btn-sm" onClick={issueCertificates} disabled={issuingCerts}>
                   {issuingCerts ? <span className="spinner spinner-sm" /> : '+ Issue Certificates'}
                 </button>
+                {certificates.length > 0 && (
+                  <button className="btn btn-danger btn-sm" onClick={undoIssueCertificates} disabled={issuingCerts}>
+                    🗑 Undo Issue
+                  </button>
+                )}
                 <button 
                   className="btn btn-success btn-sm" 
                   onClick={async () => {
