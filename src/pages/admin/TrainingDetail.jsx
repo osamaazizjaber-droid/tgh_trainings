@@ -57,6 +57,9 @@ export default function AdminTrainingDetail() {
   const [issuingCerts, setIssuingCerts] = useState(false);
   const [downloadingCerts, setDownloadingCerts] = useState(false);
   const [minDaysRequired, setMinDaysRequired] = useState(1);
+  const [previewBlob, setPreviewBlob] = useState(null);
+  const [updatingPreview, setUpdatingPreview] = useState(false);
+  const previewRef = useRef(null);
 
   // Manual grading state
   const [gradingStudent, setGradingStudent] = useState(null);
@@ -205,6 +208,70 @@ export default function AdminTrainingDetail() {
     pmTitle:     certPmTitle,
     trainerName: training?.trainers?.full_name || '',
   };
+
+  const refreshPreview = async () => {
+    setUpdatingPreview(true);
+    try {
+      const response = await fetch('/templates/template.docx');
+      const templateBuffer = await response.arrayBuffer();
+      
+      const getBuffer = async (url) => {
+        if (!url) return null;
+        try {
+          const res = await fetch(url);
+          return res.ok ? await res.arrayBuffer() : null;
+        } catch { return null; }
+      };
+
+      const donorLogo = await getBuffer(certLeftLogo);
+      const ngoLogo = await getBuffer(certRightLogo);
+
+      const zip = new PizZip(templateBuffer);
+      const opts = {
+        centered: false,
+        getImage: (v) => v,
+        getSize: (img, v, name) => name === 'qrCode' ? [80, 80] : [140, 60],
+      };
+
+      const docx = new Docxtemplater(zip, {
+        modules: [new ImageModule(opts)],
+        paragraphLoop: true,
+        linebreaks: true,
+      });
+
+      docx.render({
+        userName: 'أحمد محمد علي',
+        trainingTitle: training.title,
+        certCode: 'TGH-PREVIEW-001',
+        bodyText: certBodyText,
+        trainerName: training?.trainers?.full_name || 'Trainer Name',
+        pmName: certPmName,
+        pmTitle: certPmTitle,
+        date: new Date().toLocaleDateString('en-GB'),
+        logoDonor: donorLogo,
+        logoNgo: ngoLogo,
+        qrCode: null // Keep QR empty for preview speed
+      });
+
+      const out = docx.getZip().generate({ type: 'blob' });
+      setPreviewBlob(out);
+
+      if (previewRef.current) {
+        previewRef.current.innerHTML = '';
+        await renderAsync(out, previewRef.current);
+      }
+    } catch (err) {
+      console.error('Preview error:', err);
+    } finally {
+      setUpdatingPreview(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tab === 'certificates' && !previewBlob && training) {
+      refreshPreview();
+    }
+  }, [tab, training]);
 
   const saveQuestion = async () => {
     if (!qText.trim()) return;
@@ -708,14 +775,22 @@ export default function AdminTrainingDetail() {
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h3 className="card-title">👁 Live Preview</h3>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Showing sample name — actual names filled on export</span>
+              <button className="btn btn-secondary btn-sm" onClick={refreshPreview} disabled={updatingPreview}>
+                {updatingPreview ? <span className="spinner spinner-sm" /> : '🔄 Refresh Preview'}
+              </button>
             </div>
-            <div style={{ background: '#111', borderRadius: 10, padding: 16, display: 'flex', justifyContent: 'center', overflowX: 'auto' }}>
-              <div style={{ width: 756, height: 536, position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, transformOrigin: 'top left', transform: 'scale(0.715)', width: 1056, height: 748, pointerEvents: 'none' }}
-                  dangerouslySetInnerHTML={{ __html: buildCertHtml('أحمد محمد علي الكريمي', training.title, 'TGH-PREVIEW-001', certConfig, null) }}
-                />
-              </div>
+            <div style={{ background: '#f3f4f6', borderRadius: 10, padding: 16, display: 'flex', justifyContent: 'center', minHeight: 400 }}>
+              <div 
+                ref={previewRef}
+                className="docx-preview-container"
+                style={{ 
+                  width: '100%', 
+                  background: 'white', 
+                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                  borderRadius: 4,
+                  overflow: 'hidden'
+                }}
+              />
             </div>
           </div>
 
