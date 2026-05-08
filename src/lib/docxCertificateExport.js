@@ -60,17 +60,17 @@ export const generateDocxCertificates = async (
 
     // 3. Prepare Data for Template
     const data = {
-      userName: userName,
-      trainingTitle: training.title,
-      certCode: cert.certificate_code,
+      userName: userName || 'Unknown',
+      trainingTitle: training.title || '',
+      certCode: cert.certificate_code || '',
       bodyText: config.bodyText || '',
       trainerName: config.trainerName || '',
       pmName: config.pmName || '',
       pmTitle: config.pmTitle || '',
       date: new Date().toLocaleDateString('en-GB'),
-      qrCode: qrBuffer,
-      logoNgo: ngoLogoBuffer,
-      logoDonor: donorLogoBuffer
+      qrCode: qrBuffer || '',
+      logoNgo: ngoLogoBuffer || '',
+      logoDonor: donorLogoBuffer || ''
     };
 
     // 4. Setup Docxtemplater with Image Module
@@ -80,6 +80,7 @@ export const generateDocxCertificates = async (
       centered: false,
       getImage: (tagValue) => tagValue,
       getSize: (img, tagValue, tagName) => {
+        if (!tagValue) return [0, 0]; // Don't show if missing
         if (tagName === 'qrCode') return [80, 80];
         return [140, 60]; // Default size for logos
       },
