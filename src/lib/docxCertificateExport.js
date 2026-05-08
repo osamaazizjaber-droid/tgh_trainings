@@ -84,10 +84,15 @@ export const generateDocxCertificates = async (
       pmName: config.pmName || '',
       pmTitle: config.pmTitle || '',
       date: new Date().toLocaleDateString('en-GB'),
-      qrCode: qrBuffer || transparentPixel,
-      logoNgo: ngoLogoBuffer || transparentPixel,
-      logoDonor: donorLogoBuffer || transparentPixel
+      qrCode: qrBuffer || transparentPixel || '',
+      logoNgo: ngoLogoBuffer || transparentPixel || '',
+      ngoLogo: ngoLogoBuffer || transparentPixel || '',
+      logoNGO: ngoLogoBuffer || transparentPixel || '',
+      logoDonor: donorLogoBuffer || transparentPixel || '',
+      donorLogo: donorLogoBuffer || transparentPixel || ''
     };
+
+    const nullGetter = () => "";
 
     // 4. Setup Docxtemplater with Image Module
     const zip = new PizZip(templateBuffer, { binary: true });
@@ -96,9 +101,9 @@ export const generateDocxCertificates = async (
       centered: false,
       getImage: (tagValue) => tagValue,
       getSize: (img, tagValue, tagName) => {
-        if (tagValue === transparentPixel) return [1, 1];
+        if (!tagValue || tagValue === transparentPixel) return [1, 1];
         if (tagName === 'qrCode') return [80, 80];
-        return [140, 60]; // Default size for logos
+        return [140, 60];
       },
     };
 
@@ -106,6 +111,7 @@ export const generateDocxCertificates = async (
       modules: [new ImageModule(opts)],
       paragraphLoop: true,
       linebreaks: true,
+      nullGetter
     });
 
     // 5. Render Template with Full Error Catching
