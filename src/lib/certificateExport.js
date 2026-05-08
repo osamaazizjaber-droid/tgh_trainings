@@ -35,7 +35,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
   const textScan = isAr ? 'امسح للتحقق' : 'SCAN TO VERIFY';
 
   const logoImg = (src, alt) =>
-    `<img src="${src}" alt="${alt}" style="max-height:64px;max-width:150px;object-fit:contain;" />`;
+    `<img src="${src}" alt="${alt}" style="max-height:100px;max-width:240px;object-fit:contain;" />`;
 
   const logoBox = (label) =>
     `<div style="height:48px;border:2px dashed #d1d5db;border-radius:6px;padding:0 14px;
