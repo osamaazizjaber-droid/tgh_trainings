@@ -214,10 +214,16 @@ export default function AdminTrainingDetail() {
   };
 
   const refreshPreview = async () => {
+    if (!previewRef.current) return;
     setUpdatingPreview(true);
+    previewRef.current.innerHTML = '<div style="padding: 20px; color: #666;">⏳ Loading template...</div>';
+    
     try {
       const response = await fetch('/templates/template.docx');
+      if (!response.ok) throw new Error('Could not find template.docx in /public/templates/');
+      
       const templateBuffer = await response.arrayBuffer();
+      previewRef.current.innerHTML = '<div style="padding: 20px; color: #666;">⚙️ Processing data...</div>';
       
       const getBuffer = async (url) => {
         if (!url) return null;
@@ -244,8 +250,8 @@ export default function AdminTrainingDetail() {
       });
 
       docx.render({
-        userName: 'أحمد محمد علي',
-        trainingTitle: training.title,
+        userName: 'Participant Name Sample',
+        trainingTitle: training.title || 'Training Title',
         certCode: 'TGH-PREVIEW-001',
         bodyText: certBodyText,
         trainerName: training?.trainers?.full_name || 'Trainer Name',
@@ -254,18 +260,21 @@ export default function AdminTrainingDetail() {
         date: new Date().toLocaleDateString('en-GB'),
         logoDonor: donorLogo,
         logoNgo: ngoLogo,
-        qrCode: null // Keep QR empty for preview speed
+        qrCode: null
       });
 
       const out = docx.getZip().generate({ type: 'blob' });
       setPreviewBlob(out);
 
-      if (previewRef.current) {
-        previewRef.current.innerHTML = '';
-        await renderAsync(out, previewRef.current);
-      }
+      previewRef.current.innerHTML = '';
+      await renderAsync(out, previewRef.current, null, {
+        ignoreWidth: false,
+        ignoreHeight: false,
+        breakPages: false
+      });
     } catch (err) {
       console.error('Preview error:', err);
+      previewRef.current.innerHTML = `<div style="padding: 20px; color: var(--danger);">❌ Error: ${err.message}</div>`;
     } finally {
       setUpdatingPreview(false);
     }
