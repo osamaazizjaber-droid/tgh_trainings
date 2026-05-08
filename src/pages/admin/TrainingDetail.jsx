@@ -258,43 +258,44 @@ export default function AdminTrainingDetail() {
       };
 
       let out;
+      const commonData = {
+        userName: 'Sample Participant',
+        trainingTitle: training.title || 'Training Title',
+        certCode: 'TGH-PREVIEW-001',
+        bodyText: certBodyText || '...',
+        trainerName: (training && training.trainers && training.trainers.full_name) ? training.trainers.full_name : 'Trainer Name',
+        pmName: certPmName || 'PM Name',
+        pmTitle: certPmTitle || 'Project Manager',
+        date: new Date().toLocaleDateString('en-GB'),
+        // Try all possible names for logos to be safe
+        logoDonor: donorLogo || transparentPixel || '',
+        donorLogo: donorLogo || transparentPixel || '',
+        logoNgo: ngoLogo || transparentPixel || '',
+        ngoLogo: ngoLogo || transparentPixel || '',
+        logoNGO: ngoLogo || transparentPixel || '',
+        qrCode: transparentPixel || ''
+      };
+
+      const nullGetter = () => ""; // Force empty string for missing tags
+
       try {
         const docx = new Docxtemplater(zip, {
           modules: [new ImageModule(imageOpts)],
           paragraphLoop: true,
           linebreaks: true,
+          nullGetter
         });
-        docx.render({
-          userName: 'Sample Participant',
-          trainingTitle: training.title || 'Training Title',
-          certCode: 'TGH-PREVIEW-001',
-          bodyText: certBodyText || '...',
-          trainerName: (training && training.trainers && training.trainers.full_name) ? training.trainers.full_name : 'Trainer Name',
-          pmName: certPmName || 'PM Name',
-          pmTitle: certPmTitle || 'Project Manager',
-          date: new Date().toLocaleDateString('en-GB'),
-          logoDonor: donorLogo || transparentPixel,
-          logoNgo: ngoLogo || transparentPixel,
-          qrCode: transparentPixel
-        });
+        docx.render(commonData);
         out = docx.getZip().generate({ type: 'blob' });
       } catch (err) {
         console.warn('Image render failed, falling back to text-only:', err);
         const zipNoImg = new PizZip(templateBuffer, { binary: true });
-        const docxNoImg = new Docxtemplater(zipNoImg, { paragraphLoop: true, linebreaks: true });
-        docxNoImg.render({
-          userName: 'Sample Participant',
-          trainingTitle: training.title || 'Training Title',
-          certCode: 'TGH-PREVIEW-001',
-          bodyText: certBodyText || '...',
-          trainerName: (training && training.trainers && training.trainers.full_name) ? training.trainers.full_name : 'Trainer Name',
-          pmName: certPmName || 'PM Name',
-          pmTitle: certPmTitle || 'Project Manager',
-          date: new Date().toLocaleDateString('en-GB'),
-          logoDonor: '', // Prevent "undefined" text
-          logoNgo: '',
-          qrCode: ''
+        const docxNoImg = new Docxtemplater(zipNoImg, { 
+          paragraphLoop: true, 
+          linebreaks: true,
+          nullGetter
         });
+        docxNoImg.render(commonData);
         out = docxNoImg.getZip().generate({ type: 'blob' });
       }
 
