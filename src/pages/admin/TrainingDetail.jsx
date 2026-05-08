@@ -373,7 +373,7 @@ export default function AdminTrainingDetail() {
     training.has_pre_test || training.has_post_test ? { key: 'tests', label: `${t('test')} (${testResults.length})` } : null,
     training.has_evaluation ? { key: 'evaluations', label: `${t('evaluation')} (${evaluations.length})` } : null,
     training.has_pre_test || training.has_post_test ? { key: 'questions', label: `${t('questions')} (${questions.length})` } : null,
-    { key: 'certificates', label: `🎓 Certificates (${certificates.length})` },
+    { key: 'certificates', label: `🎓 Certificates (NEW) (${certificates.length})` },
   ].filter(Boolean);
 
   const preQs = questions.filter(q => q.type === 'pre');
