@@ -39,7 +39,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
     ">
       <!-- Google Fonts -->
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,400&family=Open+Sans:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,400&family=Open+Sans:wght@400;600;700&display=swap');
       </style>
 
       <!-- Right-side geometric background -->
@@ -80,7 +80,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
           <!-- Participant Name -->
           <div style="display:inline-block;width:65%;border-bottom:2px dashed #d1d5db;
             padding-bottom:8px;margin-bottom:20px;text-align:center;">
-            <span style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;
+            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:42px;font-weight:700;
               color:#f97316;font-style:italic;direction:auto;">
               ${userName}
             </span>
@@ -89,7 +89,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
 
         <!-- Body Text -->
         <div style="width:60%;margin-bottom:auto;">
-          <span style="font-family:'Open Sans',sans-serif;font-size:17px;font-weight:700;
+          <span style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:17px;font-weight:700;
             color:#222;line-height:1.7;direction:auto;">
             ${bodyText}
           </span>
@@ -102,7 +102,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
           <!-- Trainer Signature -->
           <div style="width:180px;text-align:center;margin-left:60px;">
             <div style="border-bottom:2px solid #d1d5db;height:52px;margin-bottom:8px;"></div>
-            <span style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;
+            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:18px;font-style:italic;
               font-weight:700;color:#222;direction:auto;">
               ${trainerName || '— — —'}
             </span>
@@ -113,7 +113,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
           <!-- PM Signature -->
           <div style="width:180px;text-align:center;margin-left:180px;margin-right:auto;">
             <div style="border-bottom:2px solid #d1d5db;height:52px;margin-bottom:8px;"></div>
-            <span style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;
+            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:18px;font-style:italic;
               font-weight:700;color:#222;direction:auto;">
               ${pmName || '— — —'}
             </span>
