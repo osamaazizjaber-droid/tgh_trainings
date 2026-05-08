@@ -237,10 +237,16 @@ export default function AdminTrainingDetail() {
       const ngoLogo = await getBuffer(certRightLogo);
 
       const zip = new PizZip(templateBuffer);
+      
+      // Safety: Only process images that actually exist
       const opts = {
         centered: false,
         getImage: (v) => v,
-        getSize: (img, v, name) => name === 'qrCode' ? [80, 80] : [140, 60],
+        getSize: (img, v, name) => {
+          if (!v) return [0, 0]; // Hide if missing
+          if (name === 'qrCode') return [80, 80];
+          return [140, 60];
+        },
       };
 
       const docx = new Docxtemplater(zip, {
@@ -249,18 +255,19 @@ export default function AdminTrainingDetail() {
         linebreaks: true,
       });
 
+      // Ensure NO undefined values are passed
       docx.render({
         userName: 'Participant Name Sample',
-        trainingTitle: training.title || 'Training Title',
+        trainingTitle: (training && training.title) ? training.title : 'Training Title',
         certCode: 'TGH-PREVIEW-001',
-        bodyText: certBodyText,
-        trainerName: training?.trainers?.full_name || 'Trainer Name',
-        pmName: certPmName,
-        pmTitle: certPmTitle,
+        bodyText: certBodyText || 'Certificate content goes here...',
+        trainerName: (training && training.trainers && training.trainers.full_name) ? training.trainers.full_name : 'Trainer Name',
+        pmName: certPmName || 'Project Manager Name',
+        pmTitle: certPmTitle || 'Project Manager',
         date: new Date().toLocaleDateString('en-GB'),
-        logoDonor: donorLogo,
-        logoNgo: ngoLogo,
-        qrCode: null
+        logoDonor: donorLogo || '', 
+        logoNgo: ngoLogo || '',
+        qrCode: '' 
       });
 
       const out = docx.getZip().generate({ type: 'blob' });
