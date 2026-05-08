@@ -220,67 +220,75 @@ export default function AdminTrainingDetail() {
     
     try {
       const response = await fetch('/templates/template.docx');
-      if (!response.ok) throw new Error('Could not find template.docx in /public/templates/');
-      
+      if (!response.ok) throw new Error('Could not find template.docx');
       const templateBuffer = await response.arrayBuffer();
-      previewRef.current.innerHTML = '<div style="padding: 20px; color: #666;">⚙️ Processing data...</div>';
       
       const getBuffer = async (url) => {
         if (!url) return null;
         try {
           const res = await fetch(url);
-          return res.ok ? await res.arrayBuffer() : null;
+          if (!res.ok) return null;
+          const buf = await res.arrayBuffer();
+          return new Uint8Array(buf); 
         } catch { return null; }
       };
 
-      // 1x1 transparent pixel to prevent crashes on missing images
+      const donorLogo = await getBuffer(certLeftLogo);
+      const ngoLogo = await getBuffer(certRightLogo);
       const transparentPixel = await getBuffer('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
-
-      const donorLogo = await getBuffer(certLeftLogo) || transparentPixel;
-      const ngoLogo = await getBuffer(certRightLogo) || transparentPixel;
 
       const zip = new PizZip(templateBuffer, { binary: true });
       
-      const opts = {
+      const imageOpts = {
         centered: false,
         getImage: (v) => v,
         getSize: (img, v, name) => {
-          if (v === transparentPixel) return [1, 1]; 
-          if (name === 'qrCode' && !v) return [1, 1];
+          if (!v || v === transparentPixel) return [1, 1];
           if (name === 'qrCode') return [80, 80];
           return [140, 60];
         },
       };
 
-      const docx = new Docxtemplater(zip, {
-        modules: [new ImageModule(opts)],
-        paragraphLoop: true,
-        linebreaks: true,
-      });
-
-      docx.render({
-        userName: 'Sample Participant',
-        trainingTitle: (training && training.title) ? training.title : 'Training Title',
-        certCode: 'TGH-PREVIEW-001',
-        bodyText: certBodyText || '...',
-        trainerName: (training && training.trainers && training.trainers.full_name) ? training.trainers.full_name : 'Trainer Name',
-        pmName: certPmName || 'PM Name',
-        pmTitle: certPmTitle || 'Project Manager',
-        date: new Date().toLocaleDateString('en-GB'),
-        logoDonor: donorLogo, 
-        logoNgo: ngoLogo,
-        qrCode: transparentPixel 
-      });
-
-      const out = docx.getZip().generate({ type: 'blob' });
-      setPreviewBlob(out);
+      let out;
+      try {
+        const docx = new Docxtemplater(zip, {
+          modules: [new ImageModule(imageOpts)],
+          paragraphLoop: true,
+          linebreaks: true,
+        });
+        docx.render({
+          userName: 'Sample Participant',
+          trainingTitle: training.title || 'Training Title',
+          certCode: 'TGH-PREVIEW-001',
+          bodyText: certBodyText || '...',
+          trainerName: (training && training.trainers && training.trainers.full_name) ? training.trainers.full_name : 'Trainer Name',
+          pmName: certPmName || 'PM Name',
+          pmTitle: certPmTitle || 'Project Manager',
+          date: new Date().toLocaleDateString('en-GB'),
+          logoDonor: donorLogo || transparentPixel,
+          logoNgo: ngoLogo || transparentPixel,
+          qrCode: transparentPixel
+        });
+        out = docx.getZip().generate({ type: 'blob' });
+      } catch (err) {
+        console.warn('Image render failed, falling back to text-only:', err);
+        const zipNoImg = new PizZip(templateBuffer, { binary: true });
+        const docxNoImg = new Docxtemplater(zipNoImg, { paragraphLoop: true, linebreaks: true });
+        docxNoImg.render({
+          userName: 'Sample Participant',
+          trainingTitle: training.title || 'Training Title',
+          certCode: 'TGH-PREVIEW-001',
+          bodyText: certBodyText || '...',
+          trainerName: (training && training.trainers && training.trainers.full_name) ? training.trainers.full_name : 'Trainer Name',
+          pmName: certPmName || 'PM Name',
+          pmTitle: certPmTitle || 'Project Manager',
+          date: new Date().toLocaleDateString('en-GB'),
+        });
+        out = docxNoImg.getZip().generate({ type: 'blob' });
+      }
 
       previewRef.current.innerHTML = '';
-      await renderAsync(out, previewRef.current, null, {
-        ignoreWidth: false,
-        ignoreHeight: false,
-        breakPages: false
-      });
+      await renderAsync(out, previewRef.current, null, { breakPages: false });
     } catch (err) {
       console.error('Preview error:', err);
       previewRef.current.innerHTML = `<div style="padding: 20px; color: var(--danger);">❌ Error: ${err.message}</div>`;
