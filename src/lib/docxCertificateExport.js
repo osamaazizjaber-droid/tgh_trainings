@@ -15,7 +15,7 @@ export const generateDocxCertificates = async (
   training, 
   baseUrl, 
   config = {}, // Added config parameter
-  templatePath = '/templates/certificate_template.docx'
+  templatePath = '/templates/template.docx'
 ) => {
   if (!certificates || certificates.length === 0) return;
 
