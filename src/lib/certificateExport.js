@@ -19,9 +19,20 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
     rightLogo   = null,
     bodyText    = '',
     pmName      = '',
-    pmTitle     = 'Project Manager',
+    pmTitle     = '',
     trainerName = '',
+    language    = 'en'
   } = config;
+
+  const isAr = language === 'ar';
+
+  const defaultPmTitle = isAr ? 'مدير المشروع' : 'Project Manager';
+  const finalPmTitle = pmTitle || defaultPmTitle;
+
+  const textTitle = isAr ? 'شهادة مشاركة' : 'CERTIFICATE OF PARTICIPATION';
+  const textSubtitle = isAr ? 'تشهد بأن' : 'This is to certify that';
+  const textTrainer = isAr ? 'المدرب' : 'TRAINER';
+  const textScan = isAr ? 'امسح للتحقق' : 'SCAN TO VERIFY';
 
   const logoImg = (src, alt) =>
     `<img src="${src}" alt="${alt}" style="max-height:64px;max-width:150px;object-fit:contain;" />`;
@@ -36,24 +47,25 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
       width:1123px;height:794px;background:#ffffff;position:relative;
       overflow:hidden;box-sizing:border-box;
       box-shadow:0 10px 25px rgba(0,0,0,0.1);
+      direction: ${isAr ? 'rtl' : 'ltr'};
     ">
       <!-- Google Fonts -->
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,400&family=Open+Sans:wght@400;600;700&display=swap');
       </style>
 
-      <!-- Right-side geometric background -->
-      <div aria-hidden="true" style="position:absolute;top:0;right:0;bottom:0;width:38%;z-index:1;overflow:hidden;pointer-events:none;">
+      <!-- Geometric background -->
+      <div aria-hidden="true" style="position:absolute;top:0;${isAr ? 'left:0;' : 'right:0;'}bottom:0;width:38%;z-index:1;overflow:hidden;pointer-events:none;">
         <!-- Black diagonal shape -->
-        <div style="position:absolute;top:-100px;right:200px;width:150px;height:150%;
-          background:#111827;transform:rotate(20deg);"></div>
+        <div style="position:absolute;top:-100px;${isAr ? 'left:200px;' : 'right:200px;'}width:150px;height:150%;
+          background:#111827;transform:rotate(${isAr ? '-20deg' : '20deg'});"></div>
         <!-- Gold stripe -->
-        <div style="position:absolute;top:-50px;right:180px;width:30px;height:120%;
-          background:#f59e0b;transform:rotate(20deg);box-shadow:-2px 0 5px rgba(0,0,0,0.2);"></div>
+        <div style="position:absolute;top:-50px;${isAr ? 'left:180px;' : 'right:180px;'}width:30px;height:120%;
+          background:#f59e0b;transform:rotate(${isAr ? '-20deg' : '20deg'});box-shadow:${isAr ? '2px' : '-2px'} 0 5px rgba(0,0,0,0.2);"></div>
         <!-- Main shape (changed from green to black) -->
-        <div style="position:absolute;top:0;right:-100px;width:450px;height:150%;
+        <div style="position:absolute;top:0;${isAr ? 'left:-100px;' : 'right:-100px;'}width:450px;height:150%;
           background:#000000;
-          transform:rotate(20deg) translateY(-20%);box-shadow:-10px 0 20px rgba(0,0,0,0.3);"></div>
+          transform:rotate(${isAr ? '-20deg' : '20deg'}) translateY(-20%);box-shadow:${isAr ? '10px' : '-10px'} 0 20px rgba(0,0,0,0.3);"></div>
       </div>
 
       <!-- Main content -->
@@ -68,20 +80,20 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
 
         <!-- Title + Name Block -->
         <div style="width:72%;text-align:center;margin-bottom:20px;">
-          <h1 style="font-family:'Playfair Display',serif;font-style:italic;font-size:40px;
+          <h1 style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-style:${isAr ? 'normal' : 'italic'};font-size:${isAr ? '46px' : '40px'};
             font-weight:700;letter-spacing:0.05em;color:#111;margin:0 0 20px 0;line-height:1.2;">
-            CERTIFICATE OF PARTICIPATION
+            ${textTitle}
           </h1>
-          <p style="font-family:'Open Sans',sans-serif;font-size:22px;font-weight:700;
+          <p style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:22px;font-weight:700;
             color:#222;margin:0 0 24px 0;">
-            This is to certify that
+            ${textSubtitle}
           </p>
 
           <!-- Participant Name -->
           <div style="display:inline-block;width:65%;border-bottom:2px dashed #d1d5db;
             padding-bottom:8px;margin-bottom:20px;text-align:center;">
             <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:42px;font-weight:700;
-              color:#f97316;font-style:italic;direction:auto;">
+              color:#f97316;font-style:${isAr ? 'normal' : 'italic'};direction:auto;">
               ${userName}
             </span>
           </div>
@@ -100,33 +112,33 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
           width:100%;margin-top:auto;padding-bottom:8px;">
 
           <!-- Trainer Signature -->
-          <div style="width:180px;text-align:center;margin-left:60px;">
+          <div style="width:180px;text-align:center;${isAr ? 'margin-right:60px;' : 'margin-left:60px;'}">
             <div style="border-bottom:2px solid #d1d5db;height:52px;margin-bottom:8px;"></div>
-            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:18px;font-style:italic;
+            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:18px;font-style:${isAr ? 'normal' : 'italic'};
               font-weight:700;color:#222;direction:auto;">
               ${trainerName || '— — —'}
             </span>
-            <div style="font-family:'Open Sans',sans-serif;font-size:12px;color:#6b7280;
-              margin-top:4px;letter-spacing:0.05em;">TRAINER</div>
+            <div style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:12px;color:#6b7280;
+              margin-top:4px;letter-spacing:0.05em;">${textTrainer}</div>
           </div>
 
           <!-- PM Signature -->
-          <div style="width:180px;text-align:center;margin-left:180px;margin-right:auto;">
+          <div style="width:180px;text-align:center;${isAr ? 'margin-right:180px;margin-left:auto;' : 'margin-left:180px;margin-right:auto;'}">
             <div style="border-bottom:2px solid #d1d5db;height:52px;margin-bottom:8px;"></div>
-            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:18px;font-style:italic;
+            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:18px;font-style:${isAr ? 'normal' : 'italic'};
               font-weight:700;color:#222;direction:auto;">
               ${pmName || '— — —'}
             </span>
-            <div style="font-family:'Open Sans',sans-serif;font-size:12px;color:#6b7280;
-              margin-top:4px;letter-spacing:0.05em;">${(pmTitle || 'Project Manager').toUpperCase()}</div>
+            <div style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:12px;color:#6b7280;
+              margin-top:4px;letter-spacing:0.05em;">${finalPmTitle.toUpperCase()}</div>
           </div>
 
-          <!-- QR Code (floats over the green section) -->
-          <div style="margin-right:60px;margin-bottom:20px;z-index:20;text-align:center;">
+          <!-- QR Code (floats over the black section) -->
+          <div style="${isAr ? 'margin-left:60px;' : 'margin-right:60px;'}margin-bottom:20px;z-index:20;text-align:center;">
             ${qrDataUrl ? `
               <img src="${qrDataUrl}" style="width:90px;height:90px;display:block;" />
-              <div style="font-family:'Open Sans',sans-serif;font-size:9px;color:#fff;
-                margin-top:4px;letter-spacing:0.05em;">SCAN TO VERIFY</div>
+              <div style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:9px;color:#fff;
+                margin-top:4px;letter-spacing:0.05em;">${textScan}</div>
               <div style="font-family:'Courier New',monospace;font-size:8px;color:#d1d5db;margin-top:2px;">
                 ${certCode}
               </div>

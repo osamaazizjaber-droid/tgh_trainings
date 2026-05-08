@@ -206,6 +206,7 @@ export default function AdminTrainingDetail() {
     pmName:      certPmName,
     pmTitle:     certPmTitle,
     trainerName: training?.trainers?.full_name || '',
+    language:    certLanguage,
   };
 
   const refreshPreview = () => {
@@ -223,6 +224,7 @@ export default function AdminTrainingDetail() {
           pmName:      certPmName,
           pmTitle:     certPmTitle,
           trainerName: training?.trainers?.full_name || '',
+          language:    certLanguage,
         },
         null
       );
@@ -239,7 +241,7 @@ export default function AdminTrainingDetail() {
     if (tab === 'certificates' && training) {
       refreshPreview();
     }
-  }, [tab, training]);
+  }, [tab, training, certLanguage]);
 
   const saveQuestion = async () => {
     if (!qText.trim()) return;
@@ -733,20 +735,31 @@ export default function AdminTrainingDetail() {
               <h3 className="card-title" style={{ marginBottom: 16 }}>✏️ Text Content</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Certificate Language</label>
+                  <select 
+                    value={certLanguage} 
+                    onChange={e => { setCertLanguage(e.target.value); localStorage.setItem('cert_language', e.target.value); }}
+                    style={{ padding: '8px 12px', fontSize: '0.9rem', borderRadius: '6px', border: '1px solid var(--border)' }}
+                  >
+                    <option value="en">English (LTR)</option>
+                    <option value="ar">Arabic (RTL)</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
                   <label>Body Paragraph</label>
                   <textarea rows={4} value={certBodyText}
                     onChange={e => { setCertBodyText(e.target.value); localStorage.setItem('cert_body_text', e.target.value); }}
-                    placeholder="has participated in the training..."
-                    style={{ fontSize: '0.85rem', resize: 'vertical' }}
+                    placeholder={certLanguage === 'ar' ? 'لقد شارك في التدريب...' : 'has participated in the training...'}
+                    style={{ fontSize: '0.85rem', resize: 'vertical', direction: certLanguage === 'ar' ? 'rtl' : 'ltr' }}
                   />
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label>Project Manager / Director Name</label>
-                  <input value={certPmName} onChange={e => { setCertPmName(e.target.value); localStorage.setItem('cert_pm_name', e.target.value); }} placeholder="e.g. Hardi Fadhil" />
+                  <input value={certPmName} onChange={e => { setCertPmName(e.target.value); localStorage.setItem('cert_pm_name', e.target.value); }} placeholder="e.g. Hardi Fadhil" style={{ direction: certLanguage === 'ar' ? 'rtl' : 'ltr' }} />
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label>Title</label>
-                  <input value={certPmTitle} onChange={e => { setCertPmTitle(e.target.value); localStorage.setItem('cert_pm_title', e.target.value); }} placeholder="e.g. Project Manager" />
+                  <input value={certPmTitle} onChange={e => { setCertPmTitle(e.target.value); localStorage.setItem('cert_pm_title', e.target.value); }} placeholder={certLanguage === 'ar' ? "مثال: مدير المشروع" : "e.g. Project Manager"} style={{ direction: certLanguage === 'ar' ? 'rtl' : 'ltr' }} />
                 </div>
               </div>
             </div>
