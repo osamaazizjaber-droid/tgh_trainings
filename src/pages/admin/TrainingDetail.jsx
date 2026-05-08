@@ -10,7 +10,7 @@ import { buildCertHtml } from '../../lib/certificateExport';
 import { generateDocxCertificates } from '../../lib/docxCertificateExport';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
-import ImageModule from 'docxtemplater-image-module-free';
+import ImageModule from '../../lib/imageModulePatched.js';
 import { renderAsync } from 'docx-preview';
 
 const BASE_URL = window.location.origin;

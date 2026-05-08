@@ -1,6 +1,6 @@
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
-import ImageModule from 'docxtemplater-image-module-free';
+import ImageModule from './imageModulePatched.js';
 import { renderAsync } from 'docx-preview';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
