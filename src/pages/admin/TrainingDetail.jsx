@@ -8,6 +8,10 @@ import { exportAttendance, exportTestResults, exportEvaluations, exportAll } fro
 import { exportStudentTestPdf } from '../../lib/pdfExport';
 import { buildCertHtml } from '../../lib/certificateExport';
 import { generateDocxCertificates } from '../../lib/docxCertificateExport';
+import PizZip from 'pizzip';
+import Docxtemplater from 'docxtemplater';
+import ImageModule from 'docxtemplater-image-module-free';
+import { renderAsync } from 'docx-preview';
 
 const BASE_URL = window.location.origin;
 
