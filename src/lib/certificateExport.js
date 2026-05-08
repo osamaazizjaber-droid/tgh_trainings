@@ -33,7 +33,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
 
   return `
     <div style="
-      width:1116px;height:750px;background:#ffffff;position:relative;
+      width:1123px;height:794px;background:#ffffff;position:relative;
       overflow:hidden;box-sizing:border-box;
       box-shadow:0 10px 25px rgba(0,0,0,0.1);
     ">
@@ -50,9 +50,9 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
         <!-- Gold stripe -->
         <div style="position:absolute;top:-50px;right:180px;width:30px;height:120%;
           background:#f59e0b;transform:rotate(20deg);box-shadow:-2px 0 5px rgba(0,0,0,0.2);"></div>
-        <!-- Dark green main shape -->
+        <!-- Main shape (changed from green to black) -->
         <div style="position:absolute;top:0;right:-100px;width:450px;height:150%;
-          background:linear-gradient(135deg,#1a4d2e 0%,#0d2617 100%);
+          background:#000000;
           transform:rotate(20deg) translateY(-20%);box-shadow:-10px 0 20px rgba(0,0,0,0.3);"></div>
       </div>
 
@@ -180,7 +180,7 @@ export const generateCertificatesPdf = async (
     try {
       const canvas = await html2canvas(container.firstElementChild, {
         scale: 2, useCORS: true, logging: false,
-        width: 1116, height: 750,
+        width: 1123, height: 794,
       });
       const imgData = canvas.toDataURL('image/png');
       if (i > 0) pdf.addPage();
