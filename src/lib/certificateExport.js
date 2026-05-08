@@ -3,8 +3,15 @@ import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 
 /**
- * Builds the certificate HTML — A4 landscape (1122 × 794 px @ 96dpi).
- * Matches the Word template design: logos top, orange name, body text, signatures, QR.
+ * Builds the certificate HTML string.
+ * Design matches the provided template: right-side dark green diagonal panel,
+ * gold stripe, black stripe. Uses Playfair Display + Open Sans fonts.
+ *
+ * @param {string} userName
+ * @param {string} trainingTitle
+ * @param {string} certCode
+ * @param {Object} config  - { leftLogo, rightLogo, bodyText, pmName, pmTitle, trainerName }
+ * @param {string|null} qrDataUrl  - data URL for QR code image
  */
 export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataUrl) => {
   const {
@@ -16,107 +23,121 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
     trainerName = '',
   } = config;
 
-  const logoPlaceholder = (label) =>
-    `<div style="width:130px;height:60px;border:2px dashed #ccc;border-radius:6px;
+  const logoImg = (src, alt) =>
+    `<img src="${src}" alt="${alt}" style="max-height:64px;max-width:150px;object-fit:contain;" />`;
+
+  const logoBox = (label) =>
+    `<div style="height:48px;border:2px dashed #d1d5db;border-radius:6px;padding:0 14px;
       display:flex;align-items:center;justify-content:center;
-      color:#aaa;font-size:11px;font-family:Arial;">${label}</div>`;
+      color:#9ca3af;font-size:12px;font-family:'Open Sans',sans-serif;">${label}</div>`;
 
   return `
     <div style="
-      width:1122px;height:794px;background:#ffffff;position:relative;
+      width:1116px;height:750px;background:#ffffff;position:relative;
       overflow:hidden;box-sizing:border-box;
-      font-family:'Segoe UI',Arial,sans-serif;
+      box-shadow:0 10px 25px rgba(0,0,0,0.1);
     ">
-      <!-- Top gold border bar -->
-      <div style="position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#c8962e,#f0c040,#c8962e);"></div>
-      <!-- Bottom gold border bar -->
-      <div style="position:absolute;bottom:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#c8962e,#f0c040,#c8962e);"></div>
-      <!-- Left gold border bar -->
-      <div style="position:absolute;top:0;left:0;bottom:0;width:8px;background:linear-gradient(180deg,#c8962e,#f0c040,#c8962e);"></div>
-      <!-- Right gold border bar -->
-      <div style="position:absolute;top:0;right:0;bottom:0;width:8px;background:linear-gradient(180deg,#c8962e,#f0c040,#c8962e);"></div>
+      <!-- Google Fonts -->
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,400&family=Open+Sans:wght@400;600;700&display=swap');
+      </style>
 
-      <!-- Inner content padding -->
-      <div style="position:absolute;top:18px;left:18px;right:18px;bottom:18px;
-        display:flex;flex-direction:column;padding:20px 36px;">
+      <!-- Right-side geometric background -->
+      <div aria-hidden="true" style="position:absolute;top:0;right:0;bottom:0;width:38%;z-index:1;overflow:hidden;pointer-events:none;">
+        <!-- Black diagonal shape -->
+        <div style="position:absolute;top:-100px;right:200px;width:150px;height:150%;
+          background:#111827;transform:rotate(20deg);"></div>
+        <!-- Gold stripe -->
+        <div style="position:absolute;top:-50px;right:180px;width:30px;height:120%;
+          background:#f59e0b;transform:rotate(20deg);box-shadow:-2px 0 5px rgba(0,0,0,0.2);"></div>
+        <!-- Dark green main shape -->
+        <div style="position:absolute;top:0;right:-100px;width:450px;height:150%;
+          background:linear-gradient(135deg,#1a4d2e 0%,#0d2617 100%);
+          transform:rotate(20deg) translateY(-20%);box-shadow:-10px 0 20px rgba(0,0,0,0.3);"></div>
+      </div>
 
-        <!-- Row 1: Logos -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <div style="display:flex;align-items:center;height:70px;">
-            ${leftLogo
-              ? `<img src="${leftLogo}" style="max-height:66px;max-width:160px;object-fit:contain;" />`
-              : logoPlaceholder('Donor Logo')}
+      <!-- Main content -->
+      <div style="position:relative;z-index:10;width:100%;height:100%;padding:40px;
+        display:flex;flex-direction:column;box-sizing:border-box;">
+
+        <!-- Top Logos -->
+        <div style="display:flex;justify-content:space-between;width:68%;margin-bottom:32px;">
+          <div>${leftLogo  ? logoImg(leftLogo,  'Donor Logo') : logoBox('Donor Logo')}</div>
+          <div>${rightLogo ? logoImg(rightLogo, 'NGO Logo')   : logoBox('NGO Logo')}</div>
+        </div>
+
+        <!-- Title + Name Block -->
+        <div style="width:72%;text-align:center;margin-bottom:20px;">
+          <h1 style="font-family:'Playfair Display',serif;font-style:italic;font-size:40px;
+            font-weight:700;letter-spacing:0.05em;color:#111;margin:0 0 20px 0;line-height:1.2;">
+            CERTIFICATE OF PARTICIPATION
+          </h1>
+          <p style="font-family:'Open Sans',sans-serif;font-size:22px;font-weight:700;
+            color:#222;margin:0 0 24px 0;">
+            This is to certify that
+          </p>
+
+          <!-- Participant Name -->
+          <div style="display:inline-block;width:65%;border-bottom:2px dashed #d1d5db;
+            padding-bottom:8px;margin-bottom:20px;text-align:center;">
+            <span style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;
+              color:#f97316;font-style:italic;direction:auto;">
+              ${userName}
+            </span>
           </div>
-          <div style="display:flex;align-items:center;height:70px;">
-            ${rightLogo
-              ? `<img src="${rightLogo}" style="max-height:66px;max-width:160px;object-fit:contain;" />`
-              : logoPlaceholder('NGO Logo')}
-          </div>
         </div>
 
-        <!-- Thin gold divider -->
-        <div style="height:2px;background:linear-gradient(90deg,transparent,#d4a017,transparent);margin-bottom:14px;"></div>
-
-        <!-- Title -->
-        <div style="text-align:center;font-size:28px;font-weight:900;letter-spacing:0.12em;
-          color:#1a1a2e;text-transform:uppercase;margin-bottom:8px;font-family:Georgia,serif;">
-          Certificate of Participation
+        <!-- Body Text -->
+        <div style="width:60%;margin-bottom:auto;">
+          <span style="font-family:'Open Sans',sans-serif;font-size:17px;font-weight:700;
+            color:#222;line-height:1.7;direction:auto;">
+            ${bodyText}
+          </span>
         </div>
 
-        <!-- Subtitle -->
-        <div style="text-align:center;font-size:15px;color:#555;font-style:italic;margin-bottom:10px;">
-          This is to certify that
-        </div>
+        <!-- Signatures + QR Row -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;
+          width:100%;margin-top:auto;padding-bottom:8px;">
 
-        <!-- Participant Name -->
-        <div style="text-align:center;font-size:32px;color:#c8962e;font-style:italic;
-          letter-spacing:0.03em;margin-bottom:4px;font-family:Georgia,serif;direction:auto;">
-          ${userName}
-        </div>
-
-        <!-- Dotted underline under name -->
-        <div style="border-bottom:2px dotted #bbb;margin:0 80px 12px;"></div>
-
-        <!-- Body text -->
-        <div style="font-size:14px;line-height:1.8;text-align:justify;color:#222;
-          font-weight:600;font-family:Arial,sans-serif;flex:1;direction:auto;overflow:hidden;padding:0 4px;">
-          ${bodyText}
-        </div>
-
-        <!-- Signatures row -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:12px;">
-          <!-- Trainer -->
-          <div style="text-align:center;min-width:170px;">
-            <div style="font-size:16px;color:#c8962e;font-style:italic;direction:auto;margin-bottom:6px;">
+          <!-- Trainer Signature -->
+          <div style="width:180px;text-align:center;margin-left:60px;">
+            <div style="border-bottom:2px solid #d1d5db;height:52px;margin-bottom:8px;"></div>
+            <span style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;
+              font-weight:700;color:#222;direction:auto;">
               ${trainerName || '— — —'}
-            </div>
-            <div style="border-top:1.5px solid #ccc;padding-top:5px;
-              font-size:12px;color:#555;font-family:Arial;letter-spacing:0.05em;">
-              TRAINER
-            </div>
+            </span>
+            <div style="font-family:'Open Sans',sans-serif;font-size:12px;color:#6b7280;
+              margin-top:4px;letter-spacing:0.05em;">TRAINER</div>
           </div>
 
-          <!-- QR code center -->
-          ${qrDataUrl ? `
-          <div style="display:flex;flex-direction:column;align-items:center;">
-            <img src="${qrDataUrl}" style="width:72px;height:72px;" />
-            <div style="font-size:8px;color:#888;margin-top:3px;font-family:Arial;letter-spacing:0.05em;">SCAN TO VERIFY</div>
-            <div style="font-size:8px;color:#aaa;font-family:'Courier New',monospace;">${certCode}</div>
-          </div>` : `
-          <div style="font-size:9px;color:#bbb;font-family:'Courier New',monospace;">${certCode}</div>`}
-
-          <!-- PM / Director -->
-          <div style="text-align:center;min-width:170px;">
-            <div style="font-size:16px;font-weight:700;direction:auto;margin-bottom:6px;color:#1a1a2e;">
+          <!-- PM Signature -->
+          <div style="width:180px;text-align:center;margin-left:180px;margin-right:auto;">
+            <div style="border-bottom:2px solid #d1d5db;height:52px;margin-bottom:8px;"></div>
+            <span style="font-family:'Playfair Display',serif;font-size:18px;font-style:italic;
+              font-weight:700;color:#222;direction:auto;">
               ${pmName || '— — —'}
-            </div>
-            <div style="border-top:1.5px solid #ccc;padding-top:5px;
-              font-size:12px;color:#555;font-family:Arial;letter-spacing:0.05em;">
-              ${(pmTitle || 'Project Manager').toUpperCase()}
-            </div>
+            </span>
+            <div style="font-family:'Open Sans',sans-serif;font-size:12px;color:#6b7280;
+              margin-top:4px;letter-spacing:0.05em;">${(pmTitle || 'Project Manager').toUpperCase()}</div>
           </div>
-        </div>
 
+          <!-- QR Code (floats over the green section) -->
+          <div style="margin-right:60px;margin-bottom:20px;z-index:20;text-align:center;">
+            ${qrDataUrl ? `
+              <img src="${qrDataUrl}" style="width:90px;height:90px;display:block;" />
+              <div style="font-family:'Open Sans',sans-serif;font-size:9px;color:#fff;
+                margin-top:4px;letter-spacing:0.05em;">SCAN TO VERIFY</div>
+              <div style="font-family:'Courier New',monospace;font-size:8px;color:#d1d5db;margin-top:2px;">
+                ${certCode}
+              </div>
+            ` : `
+              <div style="font-family:'Courier New',monospace;font-size:9px;color:#9ca3af;">
+                ${certCode}
+              </div>
+            `}
+          </div>
+
+        </div>
       </div>
     </div>`;
 };
@@ -129,7 +150,7 @@ export const generateCertificatesPdf = async (
 ) => {
   if (!certificates || certificates.length === 0) return;
 
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
   for (let i = 0; i < certificates.length; i++) {
     const cert   = certificates[i];
@@ -152,18 +173,23 @@ export const generateCertificatesPdf = async (
     );
     document.body.appendChild(container);
 
+    // Wait for fonts to load
+    await document.fonts.ready;
+    await new Promise(r => setTimeout(r, 300));
+
     try {
       const canvas = await html2canvas(container.firstElementChild, {
-        scale: 2, useCORS: true, logging: false, width: 1122, height: 794,
+        scale: 2, useCORS: true, logging: false,
+        width: 1116, height: 750,
       });
       const imgData = canvas.toDataURL('image/png');
-      if (i > 0) doc.addPage();
-      doc.addImage(imgData, 'PNG', 0, 0, 297, 210);
+      if (i > 0) pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
     } finally {
       document.body.removeChild(container);
     }
   }
 
   const projName = training.activities?.projects?.name || 'GEN';
-  doc.save(`Certificates_${projName}_${training.title.replace(/\s+/g, '_')}.pdf`);
+  pdf.save(`Certificates_${projName}_${training.title.replace(/\s+/g, '_')}.pdf`);
 };
