@@ -6,12 +6,7 @@ import { format, addDays } from 'date-fns';
 import { useLanguage } from '../../lib/LanguageContext';
 import { exportAttendance, exportTestResults, exportEvaluations, exportAll } from '../../lib/export';
 import { exportStudentTestPdf } from '../../lib/pdfExport';
-import { buildCertHtml } from '../../lib/certificateExport';
-import { generateDocxCertificates } from '../../lib/docxCertificateExport';
-import PizZip from 'pizzip';
-import Docxtemplater from 'docxtemplater';
-import ImageModule from '../../lib/imageModulePatched.js';
-import { renderAsync } from 'docx-preview';
+import { buildCertHtml, generateCertificatesPdf } from '../../lib/certificateExport';
 
 const BASE_URL = window.location.origin;
 
@@ -213,103 +208,35 @@ export default function AdminTrainingDetail() {
     trainerName: training?.trainers?.full_name || '',
   };
 
-  const refreshPreview = async () => {
+  const refreshPreview = () => {
     if (!previewRef.current) return;
     setUpdatingPreview(true);
-    previewRef.current.innerHTML = '<div style="padding: 20px; color: #666;">⏳ Loading template...</div>';
-    
     try {
-      const response = await fetch('/templates/template.docx');
-      if (!response.ok) throw new Error('Could not find template.docx');
-      const templateBuffer = await response.arrayBuffer();
-      
-      const getBuffer = async (url) => {
-        if (!url) return null;
-        if (url.startsWith('data:')) {
-          const base64 = url.split(',')[1];
-          const binary = window.atob(base64);
-          const len = binary.length;
-          const bytes = new Uint8Array(len);
-          for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-          return bytes;
-        }
-        try {
-          const res = await fetch(url);
-          if (!res.ok) return null;
-          const buf = await res.arrayBuffer();
-          return new Uint8Array(buf); 
-        } catch { return null; }
-      };
-
-      // TRANSPARENT_PIXEL for placeholder images
-      const b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-      const binary = atob(b64);
-      const PIXEL = new Uint8Array(binary.length);
-      for (let pi = 0; pi < binary.length; pi++) PIXEL[pi] = binary.charCodeAt(pi);
-
-      const donorLogo = await getBuffer(certLeftLogo)  || PIXEL;
-      const ngoLogo   = await getBuffer(certRightLogo) || PIXEL;
-
-      // ArrayBuffer → PizZip (no binary:true needed for ArrayBuffer)
-      const zip = new PizZip(templateBuffer);
-      
-      const imageOpts = {
-        centered: false,
-        getImage: (v) => v,
-        getSize: (img, v, name) => {
-          if (!v || v.length <= 68) return [1, 1]; // tiny/pixel
-          return name === 'qrCode' ? [80, 80] : [140, 60];
+      const html = buildCertHtml(
+        'Sample Participant',
+        training.title || 'Training Title',
+        'TGH-PREVIEW-001',
+        {
+          leftLogo:    certLeftLogo,
+          rightLogo:   certRightLogo,
+          bodyText:    certBodyText,
+          pmName:      certPmName,
+          pmTitle:     certPmTitle,
+          trainerName: training?.trainers?.full_name || '',
         },
-      };
-
-      const commonData = {
-        userName:      'Sample Participant',
-        trainingTitle:  training.title || 'Training Title',
-        certCode:       'TGH-PREVIEW-001',
-        bodyText:       certBodyText || '',
-        trainerName:    training?.trainers?.full_name || 'Trainer Name',
-        pmName:         certPmName || '',
-        pmTitle:        certPmTitle || '',
-        date:           new Date().toLocaleDateString('en-GB'),
-        logoDonor: donorLogo, donorLogo: donorLogo,
-        logoNgo:   ngoLogo,   ngoLogo:   ngoLogo, logoNGO: ngoLogo,
-        qrCode:    PIXEL,
-      };
-
-      let out;
-      try {
-        const docx = new Docxtemplater(zip, {
-          modules: [new ImageModule(imageOpts)],
-          paragraphLoop: true,
-          linebreaks: true,
-          nullGetter: () => '',
-        });
-        docx.render(commonData);
-        out = docx.getZip().generate({ type: 'blob' });
-      } catch (imgErr) {
-        console.warn('Image module failed, trying text-only:', imgErr.message);
-        const zip2 = new PizZip(templateBuffer);
-        const docx2 = new Docxtemplater(zip2, {
-          paragraphLoop: true,
-          linebreaks: true,
-          nullGetter: () => '',
-        });
-        docx2.render(commonData);
-        out = docx2.getZip().generate({ type: 'blob' });
-      }
-
-      previewRef.current.innerHTML = '';
-      await renderAsync(out, previewRef.current, null, { breakPages: false });
+        null
+      );
+      previewRef.current.innerHTML = html;
     } catch (err) {
       console.error('Preview error:', err);
-      previewRef.current.innerHTML = `<div style="padding: 20px; color: var(--danger);">❌ Error: ${err.message}</div>`;
+      previewRef.current.innerHTML = `<div style="padding:20px;color:red;">❌ ${err.message}</div>`;
     } finally {
       setUpdatingPreview(false);
     }
   };
 
   useEffect(() => {
-    if (tab === 'certificates' && !previewBlob && training) {
+    if (tab === 'certificates' && training) {
       refreshPreview();
     }
   }, [tab, training]);
@@ -878,9 +805,9 @@ export default function AdminTrainingDetail() {
                   onClick={async () => {
                     setDownloadingCerts(true);
                     try {
-                      await generateDocxCertificates(certificates, attendanceByUser, training, BASE_URL, certConfig);
+                      await generateCertificatesPdf(certificates, attendanceByUser, training, BASE_URL, certConfig);
                     } catch (err) {
-                      alert(err.message);
+                      alert('Download failed: ' + err.message);
                     } finally {
                       setDownloadingCerts(false);
                     }

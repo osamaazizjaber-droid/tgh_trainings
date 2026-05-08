@@ -3,8 +3,8 @@ import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 
 /**
- * Builds the certificate HTML string (used for both live preview and PDF export).
- * All images must be data URLs for html2canvas to work.
+ * Builds the certificate HTML — A4 landscape (1122 × 794 px @ 96dpi).
+ * Matches the Word template design: logos top, orange name, body text, signatures, QR.
  */
 export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataUrl) => {
   const {
@@ -16,110 +16,113 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
     trainerName = '',
   } = config;
 
-  const logoBox = (label) => `
-    <div style="width:140px;height:64px;border:2px dashed #d1d5db;border-radius:6px;
+  const logoPlaceholder = (label) =>
+    `<div style="width:130px;height:60px;border:2px dashed #ccc;border-radius:6px;
       display:flex;align-items:center;justify-content:center;
-      color:#9ca3af;font-size:11px;font-family:Arial;">${label}</div>`;
+      color:#aaa;font-size:11px;font-family:Arial;">${label}</div>`;
 
   return `
     <div style="
-      width:1056px;height:748px;background:#ffffff;position:relative;
-      overflow:hidden;font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+      width:1122px;height:794px;background:#ffffff;position:relative;
+      overflow:hidden;box-sizing:border-box;
+      font-family:'Segoe UI',Arial,sans-serif;
     ">
-      <!-- Right dark-green decorative panel -->
-      <div style="position:absolute;right:0;top:0;width:145px;height:100%;background:#1a3a2a;
-        clip-path:polygon(35% 0,100% 0,100% 100%,0% 100%);"></div>
+      <!-- Top gold border bar -->
+      <div style="position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#c8962e,#f0c040,#c8962e);"></div>
+      <!-- Bottom gold border bar -->
+      <div style="position:absolute;bottom:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#c8962e,#f0c040,#c8962e);"></div>
+      <!-- Left gold border bar -->
+      <div style="position:absolute;top:0;left:0;bottom:0;width:8px;background:linear-gradient(180deg,#c8962e,#f0c040,#c8962e);"></div>
+      <!-- Right gold border bar -->
+      <div style="position:absolute;top:0;right:0;bottom:0;width:8px;background:linear-gradient(180deg,#c8962e,#f0c040,#c8962e);"></div>
 
-      <!-- Orange lower accent -->
-      <div style="position:absolute;right:0;bottom:0;width:145px;height:42%;background:#f59e0b;
-        clip-path:polygon(35% 0,100% 0,100% 100%,0% 100%);"></div>
+      <!-- Inner content padding -->
+      <div style="position:absolute;top:18px;left:18px;right:18px;bottom:18px;
+        display:flex;flex-direction:column;padding:20px 36px;">
 
-      <!-- Main content -->
-      <div style="position:absolute;left:0;top:0;right:100px;bottom:0;padding:30px 52px;
-        display:flex;flex-direction:column;">
-
-        <!-- Logos row -->
-        <div style="display:flex;justify-content:space-between;align-items:center;height:80px;margin-bottom:12px;">
-          ${leftLogo
-            ? `<img src="${leftLogo}" style="max-height:70px;max-width:170px;object-fit:contain;" />`
-            : logoBox('Left Logo')}
-          ${rightLogo
-            ? `<img src="${rightLogo}" style="max-height:70px;max-width:170px;object-fit:contain;" />`
-            : logoBox('Right Logo')}
+        <!-- Row 1: Logos -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;height:70px;">
+            ${leftLogo
+              ? `<img src="${leftLogo}" style="max-height:66px;max-width:160px;object-fit:contain;" />`
+              : logoPlaceholder('Donor Logo')}
+          </div>
+          <div style="display:flex;align-items:center;height:70px;">
+            ${rightLogo
+              ? `<img src="${rightLogo}" style="max-height:66px;max-width:160px;object-fit:contain;" />`
+              : logoPlaceholder('NGO Logo')}
+          </div>
         </div>
 
+        <!-- Thin gold divider -->
+        <div style="height:2px;background:linear-gradient(90deg,transparent,#d4a017,transparent);margin-bottom:14px;"></div>
+
         <!-- Title -->
-        <div style="text-align:center;font-size:30px;font-weight:900;letter-spacing:0.1em;
-          color:#111827;margin-bottom:10px;text-transform:uppercase;">
+        <div style="text-align:center;font-size:28px;font-weight:900;letter-spacing:0.12em;
+          color:#1a1a2e;text-transform:uppercase;margin-bottom:8px;font-family:Georgia,serif;">
           Certificate of Participation
         </div>
 
         <!-- Subtitle -->
-        <div style="text-align:center;font-size:17px;color:#374151;font-style:italic;margin-bottom:10px;">
+        <div style="text-align:center;font-size:15px;color:#555;font-style:italic;margin-bottom:10px;">
           This is to certify that
         </div>
 
-        <!-- Name -->
-        <div style="text-align:center;font-size:34px;color:#d97706;font-style:italic;
-          letter-spacing:0.02em;margin-bottom:6px;direction:auto;">
+        <!-- Participant Name -->
+        <div style="text-align:center;font-size:32px;color:#c8962e;font-style:italic;
+          letter-spacing:0.03em;margin-bottom:4px;font-family:Georgia,serif;direction:auto;">
           ${userName}
         </div>
 
-        <!-- Dotted underline -->
-        <div style="border-bottom:2px dotted #9ca3af;margin:0 60px 14px;"></div>
+        <!-- Dotted underline under name -->
+        <div style="border-bottom:2px dotted #bbb;margin:0 80px 12px;"></div>
 
         <!-- Body text -->
-        <div style="font-size:14.5px;line-height:1.75;text-align:justify;color:#111827;
-          font-weight:700;font-family:Arial,sans-serif;flex:1;direction:auto;overflow:hidden;">
+        <div style="font-size:14px;line-height:1.8;text-align:justify;color:#222;
+          font-weight:600;font-family:Arial,sans-serif;flex:1;direction:auto;overflow:hidden;padding:0 4px;">
           ${bodyText}
         </div>
 
-        <!-- Signatures -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-end;
-          padding-top:10px;margin-top:10px;">
-          <div style="text-align:center;min-width:160px;">
-            <div style="font-size:18px;color:#d97706;font-style:italic;direction:auto;">
+        <!-- Signatures row -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:12px;">
+          <!-- Trainer -->
+          <div style="text-align:center;min-width:170px;">
+            <div style="font-size:16px;color:#c8962e;font-style:italic;direction:auto;margin-bottom:6px;">
               ${trainerName || '— — —'}
             </div>
-            <div style="border-top:1px solid #d1d5db;padding-top:5px;margin-top:4px;
-              font-size:13px;color:#374151;font-family:Arial,sans-serif;">Trainer</div>
+            <div style="border-top:1.5px solid #ccc;padding-top:5px;
+              font-size:12px;color:#555;font-family:Arial;letter-spacing:0.05em;">
+              TRAINER
+            </div>
           </div>
-          <div style="text-align:center;min-width:160px;">
-            <div style="font-size:16px;font-weight:700;font-family:Arial,sans-serif;direction:auto;">
+
+          <!-- QR code center -->
+          ${qrDataUrl ? `
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <img src="${qrDataUrl}" style="width:72px;height:72px;" />
+            <div style="font-size:8px;color:#888;margin-top:3px;font-family:Arial;letter-spacing:0.05em;">SCAN TO VERIFY</div>
+            <div style="font-size:8px;color:#aaa;font-family:'Courier New',monospace;">${certCode}</div>
+          </div>` : `
+          <div style="font-size:9px;color:#bbb;font-family:'Courier New',monospace;">${certCode}</div>`}
+
+          <!-- PM / Director -->
+          <div style="text-align:center;min-width:170px;">
+            <div style="font-size:16px;font-weight:700;direction:auto;margin-bottom:6px;color:#1a1a2e;">
               ${pmName || '— — —'}
             </div>
-            <div style="border-top:1px solid #d1d5db;padding-top:5px;margin-top:4px;
-              font-size:13px;color:#374151;font-family:Arial,sans-serif;">${pmTitle}</div>
+            <div style="border-top:1.5px solid #ccc;padding-top:5px;
+              font-size:12px;color:#555;font-family:Arial;letter-spacing:0.05em;">
+              ${(pmTitle || 'Project Manager').toUpperCase()}
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- QR on orange box -->
-      ${qrDataUrl ? `
-        <div style="position:absolute;right:6px;bottom:6px;width:115px;height:115px;
-          background:#f59e0b;display:flex;flex-direction:column;align-items:center;
-          justify-content:center;padding:6px;">
-          <img src="${qrDataUrl}" style="width:88px;height:88px;" />
-          <div style="font-size:9px;color:#1a1a1a;margin-top:2px;font-family:Arial;font-weight:700;">
-            SCAN TO VERIFY
-          </div>
-        </div>` : ''}
-
-      <!-- Cert code small text -->
-      <div style="position:absolute;bottom:10px;left:52px;font-size:10px;
-        color:#9ca3af;font-family:'Courier New',monospace;letter-spacing:0.06em;">
-        ${certCode}
       </div>
     </div>`;
 };
 
 /**
- * Generates and downloads a PDF containing all issued certificates.
- * @param {Array} certificates
- * @param {Object} attendanceByUser
- * @param {Object} training
- * @param {string} baseUrl
- * @param {Object} config  - { leftLogo, rightLogo, bodyText, pmName, pmTitle, trainerName }
+ * Generates and downloads a multi-page PDF of all issued certificates.
  */
 export const generateCertificatesPdf = async (
   certificates, attendanceByUser, training, baseUrl, config = {}
@@ -135,11 +138,11 @@ export const generateCertificatesPdf = async (
 
     const userName = [
       record.user.first_name, record.user.second_name,
-      record.user.third_name, record.user.fourth_name,
+      record.user.third_name,  record.user.fourth_name,
     ].filter(Boolean).join(' ');
 
     const verifyUrl = `${baseUrl}/verify?code=${cert.certificate_code}`;
-    let qrDataUrl   = null;
+    let qrDataUrl = null;
     try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 180 }); } catch (_) {}
 
     const container = document.createElement('div');
@@ -150,8 +153,8 @@ export const generateCertificatesPdf = async (
     document.body.appendChild(container);
 
     try {
-      const canvas  = await html2canvas(container.firstElementChild, {
-        scale: 2, useCORS: true, logging: false, width: 1056, height: 748,
+      const canvas = await html2canvas(container.firstElementChild, {
+        scale: 2, useCORS: true, logging: false, width: 1122, height: 794,
       });
       const imgData = canvas.toDataURL('image/png');
       if (i > 0) doc.addPage();
