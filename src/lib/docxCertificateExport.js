@@ -57,6 +57,8 @@ export const generateDocxCertificates = async (
     const verifyUrl = `${baseUrl}/verify?code=${cert.certificate_code}`;
     const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 200 });
     const qrBuffer = await getBuffer(qrDataUrl);
+    
+    const transparentPixel = await getBuffer('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
 
     // 3. Prepare Data for Template
     const data = {
@@ -68,9 +70,9 @@ export const generateDocxCertificates = async (
       pmName: config.pmName || '',
       pmTitle: config.pmTitle || '',
       date: new Date().toLocaleDateString('en-GB'),
-      qrCode: qrBuffer || '',
-      logoNgo: ngoLogoBuffer || '',
-      logoDonor: donorLogoBuffer || ''
+      qrCode: qrBuffer || transparentPixel,
+      logoNgo: ngoLogoBuffer || transparentPixel,
+      logoDonor: donorLogoBuffer || transparentPixel
     };
 
     // 4. Setup Docxtemplater with Image Module
@@ -80,7 +82,7 @@ export const generateDocxCertificates = async (
       centered: false,
       getImage: (tagValue) => tagValue,
       getSize: (img, tagValue, tagName) => {
-        if (!tagValue) return [0, 0]; // Don't show if missing
+        if (tagValue === transparentPixel) return [1, 1];
         if (tagName === 'qrCode') return [80, 80];
         return [140, 60]; // Default size for logos
       },
