@@ -72,6 +72,7 @@ export default function AdminTrainingDetail() {
   const [certBodyText,  setCertBodyText]  = useState(() => localStorage.getItem('cert_body_text')  || 'has participated in the training organized by Triangle Génération Humanitaire (TGH).');
   const [certPmName,    setCertPmName]    = useState(() => localStorage.getItem('cert_pm_name')    || '');
   const [certPmTitle,   setCertPmTitle]   = useState(() => localStorage.getItem('cert_pm_title')   || 'Project Manager');
+  const [certLanguage,  setCertLanguage]  = useState(() => localStorage.getItem('cert_language')   || 'en');
 
   // Question form state
   const [showQForm, setShowQForm] = useState(false);
