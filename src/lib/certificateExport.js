@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
-import html2canvas from 'html2canvas';
+import * as htmlToImage from 'html-to-image';
 
 /**
  * Builds the certificate HTML string.
@@ -51,7 +51,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
     ">
       <!-- Google Fonts -->
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,400&family=Open+Sans:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;600;700&family=Dancing+Script:wght@700&family=Playfair+Display:ital,wght@0,700;1,400&family=Open+Sans:wght@400;600;700&display=swap');
       </style>
 
       <!-- Geometric background -->
@@ -80,11 +80,11 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
 
         <!-- Title + Name Block -->
         <div style="width:72%;text-align:center;margin-bottom:20px;">
-          <h1 style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-style:${isAr ? 'normal' : 'italic'};font-size:${isAr ? '52px' : '40px'};
+          <h1 style="font-family:'Playfair Display', 'Amiri', serif;font-style:${isAr ? 'normal' : 'italic'};font-size:${isAr ? '56px' : '40px'};
             font-weight:700;letter-spacing:0.05em;color:#111;margin:0 0 20px 0;line-height:1.2;">
             ${textTitle}
           </h1>
-          <p style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:${isAr ? '26px' : '22px'};font-weight:700;
+          <p style="font-family:'Open Sans', 'Cairo', sans-serif;font-size:${isAr ? '26px' : '22px'};font-weight:700;
             color:#222;margin:0 0 24px 0;">
             ${textSubtitle}
           </p>
@@ -101,7 +101,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
 
         <!-- Body Text -->
         <div style="width:60%;margin-bottom:auto;">
-          <span style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:${isAr ? '20px' : '17px'};font-weight:700;
+          <span style="font-family:'Open Sans', 'Cairo', sans-serif;font-size:${isAr ? '20px' : '17px'};font-weight:700;
             color:#222;line-height:1.7;direction:auto;">
             ${bodyText}
           </span>
@@ -118,7 +118,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
               font-weight:700;color:#222;direction:auto;">
               ${trainerName || '— — —'}
             </span>
-            <div style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:${isAr ? '14px' : '12px'};color:#6b7280;
+            <div style="font-family:'Open Sans', 'Cairo', sans-serif;font-size:${isAr ? '14px' : '12px'};color:#6b7280;
               margin-top:4px;letter-spacing:0.05em;">${textTrainer}</div>
           </div>
 
@@ -129,7 +129,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
               font-weight:700;color:#222;direction:auto;">
               ${pmName || '— — —'}
             </span>
-            <div style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:${isAr ? '14px' : '12px'};color:#6b7280;
+            <div style="font-family:'Open Sans', 'Cairo', sans-serif;font-size:${isAr ? '14px' : '12px'};color:#6b7280;
               margin-top:4px;letter-spacing:0.05em;">${finalPmTitle.toUpperCase()}</div>
           </div>
 
@@ -137,7 +137,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
           <div style="${isAr ? 'margin-left:60px;' : 'margin-right:60px;'}margin-bottom:20px;z-index:20;text-align:center;">
             ${qrDataUrl ? `
               <img src="${qrDataUrl}" style="width:90px;height:90px;display:block;" />
-              <div style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:9px;color:#fff;
+              <div style="font-family:'Open Sans', 'Cairo', sans-serif;font-size:9px;color:#fff;
                 margin-top:4px;letter-spacing:0.05em;">${textScan}</div>
               <div style="font-family:'Courier New',monospace;font-size:8px;color:#d1d5db;margin-top:2px;">
                 ${certCode}
@@ -190,11 +190,11 @@ export const generateCertificatesPdf = async (
     await new Promise(r => setTimeout(r, 300));
 
     try {
-      const canvas = await html2canvas(container.firstElementChild, {
-        scale: 2, useCORS: true, logging: false,
-        width: 1123, height: 794,
+      const imgData = await htmlToImage.toPng(container.firstElementChild, {
+        pixelRatio: 2,
+        width: 1123,
+        height: 794,
       });
-      const imgData = canvas.toDataURL('image/png');
       if (i > 0) pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
     } finally {
