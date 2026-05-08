@@ -100,7 +100,17 @@ export const generateDocxCertificates = async (
       linebreaks: true,
     });
 
-    docx.render(data);
+    // 5. Render Template with Full Error Catching
+    try {
+      docx.render(data);
+    } catch (error) {
+      console.error('Docxtemplater Error:', error);
+      if (error.properties && error.properties.errors) {
+        const errorMessages = error.properties.errors.map(e => e.message).join(', ');
+        throw new Error(`Template Error: ${errorMessages}`);
+      }
+      throw error;
+    }
 
     const out = docx.getZip().generate({
       type: 'blob',
