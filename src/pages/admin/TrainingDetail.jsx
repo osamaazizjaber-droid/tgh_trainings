@@ -225,6 +225,14 @@ export default function AdminTrainingDetail() {
       
       const getBuffer = async (url) => {
         if (!url) return null;
+        if (url.startsWith('data:')) {
+          const base64 = url.split(',')[1];
+          const binary = window.atob(base64);
+          const len = binary.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+          return bytes;
+        }
         try {
           const res = await fetch(url);
           if (!res.ok) return null;
