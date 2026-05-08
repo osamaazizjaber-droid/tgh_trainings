@@ -283,6 +283,9 @@ export default function AdminTrainingDetail() {
           pmName: certPmName || 'PM Name',
           pmTitle: certPmTitle || 'Project Manager',
           date: new Date().toLocaleDateString('en-GB'),
+          logoDonor: '', // Prevent "undefined" text
+          logoNgo: '',
+          qrCode: ''
         });
         out = docxNoImg.getZip().generate({ type: 'blob' });
       }

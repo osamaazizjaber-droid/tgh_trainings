@@ -22,8 +22,14 @@ export const generateDocxCertificates = async (
   // Helper to convert dataURL/URL to ArrayBuffer for docxtemplater
   const getBuffer = async (url) => {
     if (!url) return null;
-    const res = await fetch(url);
-    return res.ok ? await res.arrayBuffer() : null;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const buf = await res.arrayBuffer();
+      return new Uint8Array(buf); // Use Uint8Array for image module compatibility
+    } catch {
+      return null;
+    }
   };
 
   // 1. Fetch the template
