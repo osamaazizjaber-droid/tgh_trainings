@@ -241,62 +241,61 @@ export default function AdminTrainingDetail() {
         } catch { return null; }
       };
 
-      const donorLogo = await getBuffer(certLeftLogo);
-      const ngoLogo = await getBuffer(certRightLogo);
-      const transparentPixel = await getBuffer('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+      // TRANSPARENT_PIXEL for placeholder images
+      const b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+      const binary = atob(b64);
+      const PIXEL = new Uint8Array(binary.length);
+      for (let pi = 0; pi < binary.length; pi++) PIXEL[pi] = binary.charCodeAt(pi);
 
-      const zip = new PizZip(templateBuffer, { binary: true });
+      const donorLogo = await getBuffer(certLeftLogo)  || PIXEL;
+      const ngoLogo   = await getBuffer(certRightLogo) || PIXEL;
+
+      // ArrayBuffer → PizZip (no binary:true needed for ArrayBuffer)
+      const zip = new PizZip(templateBuffer);
       
       const imageOpts = {
         centered: false,
         getImage: (v) => v,
         getSize: (img, v, name) => {
-          if (!v || v === transparentPixel) return [1, 1];
-          if (name === 'qrCode') return [80, 80];
-          return [140, 60];
+          if (!v || v.length <= 68) return [1, 1]; // tiny/pixel
+          return name === 'qrCode' ? [80, 80] : [140, 60];
         },
       };
 
-      let out;
       const commonData = {
-        userName: 'Sample Participant',
-        trainingTitle: training.title || 'Training Title',
-        certCode: 'TGH-PREVIEW-001',
-        bodyText: certBodyText || '...',
-        trainerName: (training && training.trainers && training.trainers.full_name) ? training.trainers.full_name : 'Trainer Name',
-        pmName: certPmName || 'PM Name',
-        pmTitle: certPmTitle || 'Project Manager',
-        date: new Date().toLocaleDateString('en-GB'),
-        // Try all possible names for logos to be safe
-        logoDonor: donorLogo || transparentPixel || '',
-        donorLogo: donorLogo || transparentPixel || '',
-        logoNgo: ngoLogo || transparentPixel || '',
-        ngoLogo: ngoLogo || transparentPixel || '',
-        logoNGO: ngoLogo || transparentPixel || '',
-        qrCode: transparentPixel || ''
+        userName:      'Sample Participant',
+        trainingTitle:  training.title || 'Training Title',
+        certCode:       'TGH-PREVIEW-001',
+        bodyText:       certBodyText || '',
+        trainerName:    training?.trainers?.full_name || 'Trainer Name',
+        pmName:         certPmName || '',
+        pmTitle:        certPmTitle || '',
+        date:           new Date().toLocaleDateString('en-GB'),
+        logoDonor: donorLogo, donorLogo: donorLogo,
+        logoNgo:   ngoLogo,   ngoLogo:   ngoLogo, logoNGO: ngoLogo,
+        qrCode:    PIXEL,
       };
 
-      const nullGetter = () => ""; // Force empty string for missing tags
-
+      let out;
       try {
         const docx = new Docxtemplater(zip, {
           modules: [new ImageModule(imageOpts)],
           paragraphLoop: true,
           linebreaks: true,
-          nullGetter
+          nullGetter: () => '',
         });
         docx.render(commonData);
         out = docx.getZip().generate({ type: 'blob' });
-      } catch (err) {
-        console.warn('Image render failed, falling back to text-only:', err);
-        const zipNoImg = new PizZip(templateBuffer, { binary: true });
-        const docxNoImg = new Docxtemplater(zipNoImg, { 
-          paragraphLoop: true, 
+      } catch (imgErr) {
+        console.warn('Image module failed, trying text-only:', imgErr.message);
+        const zip2 = new PizZip(templateBuffer);
+        const docx2 = new Docxtemplater(zip2, {
+          paragraphLoop: true,
           linebreaks: true,
-          nullGetter
+          nullGetter: () => '',
         });
-        docxNoImg.render(commonData);
-        out = docxNoImg.getZip().generate({ type: 'blob' });
+        docx2.render(commonData);
+        out = docx2.getZip().generate({ type: 'blob' });
       }
 
       previewRef.current.innerHTML = '';
