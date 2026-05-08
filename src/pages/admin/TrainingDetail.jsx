@@ -6,7 +6,8 @@ import { format, addDays } from 'date-fns';
 import { useLanguage } from '../../lib/LanguageContext';
 import { exportAttendance, exportTestResults, exportEvaluations, exportAll } from '../../lib/export';
 import { exportStudentTestPdf } from '../../lib/pdfExport';
-import { generateCertificatesPdf, buildCertHtml } from '../../lib/certificateExport';
+import { buildCertHtml } from '../../lib/certificateExport';
+import { generateDocxCertificates } from '../../lib/docxCertificateExport';
 
 const BASE_URL = window.location.origin;
 
@@ -54,6 +55,7 @@ export default function AdminTrainingDetail() {
   const [savingExpiry, setSavingExpiry] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [issuingCerts, setIssuingCerts] = useState(false);
+  const [downloadingCerts, setDownloadingCerts] = useState(false);
   const [minDaysRequired, setMinDaysRequired] = useState(1);
 
   // Manual grading state
@@ -734,8 +736,21 @@ export default function AdminTrainingDetail() {
                 <button className="btn btn-primary btn-sm" onClick={issueCertificates} disabled={issuingCerts}>
                   {issuingCerts ? <span className="spinner spinner-sm" /> : '+ Issue Certificates'}
                 </button>
-                <button className="btn btn-success btn-sm" onClick={() => generateCertificatesPdf(certificates, attendanceByUser, training, BASE_URL, certConfig)} disabled={certificates.length === 0}>
-                  ⬇ Download PDFs
+                <button 
+                  className="btn btn-success btn-sm" 
+                  onClick={async () => {
+                    setDownloadingCerts(true);
+                    try {
+                      await generateDocxCertificates(certificates, attendanceByUser, training, BASE_URL, certConfig);
+                    } catch (err) {
+                      alert(err.message);
+                    } finally {
+                      setDownloadingCerts(false);
+                    }
+                  }} 
+                  disabled={certificates.length === 0 || downloadingCerts}
+                >
+                  {downloadingCerts ? <span className="spinner spinner-sm" /> : '⬇ Download PDFs'}
                 </button>
               </div>
             </div>
