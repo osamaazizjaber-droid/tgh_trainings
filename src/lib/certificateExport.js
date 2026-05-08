@@ -30,7 +30,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
   const finalPmTitle = pmTitle || defaultPmTitle;
 
   const textTitle = isAr ? 'شهادة مشاركة' : 'CERTIFICATE OF PARTICIPATION';
-  const textSubtitle = isAr ? 'تشهد بأن' : 'This is to certify that';
+  const textSubtitle = isAr ? 'تُمنح هذه الشهادة إلى' : 'This is to certify that';
   const textTrainer = isAr ? 'المدرب' : 'TRAINER';
   const textScan = isAr ? 'امسح للتحقق' : 'SCAN TO VERIFY';
 
