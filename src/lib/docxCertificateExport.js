@@ -76,7 +76,7 @@ export const generateDocxCertificates = async (
     };
 
     // 4. Setup Docxtemplater with Image Module
-    const zip = new PizZip(templateBuffer);
+    const zip = new PizZip(templateBuffer, { binary: true });
     
     const opts = {
       centered: false,

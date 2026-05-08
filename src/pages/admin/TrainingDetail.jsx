@@ -239,7 +239,7 @@ export default function AdminTrainingDetail() {
       const donorLogo = await getBuffer(certLeftLogo) || transparentPixel;
       const ngoLogo = await getBuffer(certRightLogo) || transparentPixel;
 
-      const zip = new PizZip(templateBuffer);
+      const zip = new PizZip(templateBuffer, { binary: true });
       
       const opts = {
         centered: false,
