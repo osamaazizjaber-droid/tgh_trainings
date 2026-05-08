@@ -829,9 +829,12 @@ export default function AdminTrainingDetail() {
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h3 className="card-title">👁 Live Preview</h3>
-              <button className="btn btn-secondary btn-sm" onClick={refreshPreview} disabled={updatingPreview}>
-                {updatingPreview ? <span className="spinner spinner-sm" /> : '🔄 Refresh Preview'}
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">v1.2 (7:52 PM)</span>
+                <button className="btn btn-secondary btn-sm" onClick={refreshPreview} disabled={updatingPreview}>
+                  <i className="fas fa-sync-alt" /> {updatingPreview ? 'Updating...' : 'Refresh Preview'}
+                </button>
+              </div>
             </div>
             <div style={{ background: '#f3f4f6', borderRadius: 10, padding: 16, display: 'flex', justifyContent: 'center', minHeight: 400 }}>
               <div 
