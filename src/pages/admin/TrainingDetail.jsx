@@ -233,17 +233,20 @@ export default function AdminTrainingDetail() {
         } catch { return null; }
       };
 
-      const donorLogo = await getBuffer(certLeftLogo);
-      const ngoLogo = await getBuffer(certRightLogo);
+      // 1x1 transparent pixel to prevent crashes on missing images
+      const transparentPixel = await getBuffer('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
+
+      const donorLogo = await getBuffer(certLeftLogo) || transparentPixel;
+      const ngoLogo = await getBuffer(certRightLogo) || transparentPixel;
 
       const zip = new PizZip(templateBuffer);
       
-      // Safety: Only process images that actually exist
       const opts = {
         centered: false,
         getImage: (v) => v,
         getSize: (img, v, name) => {
-          if (!v) return [0, 0]; // Hide if missing
+          if (v === transparentPixel) return [1, 1]; 
+          if (name === 'qrCode' && !v) return [1, 1];
           if (name === 'qrCode') return [80, 80];
           return [140, 60];
         },
@@ -255,19 +258,18 @@ export default function AdminTrainingDetail() {
         linebreaks: true,
       });
 
-      // Ensure NO undefined values are passed
       docx.render({
-        userName: 'Participant Name Sample',
+        userName: 'Sample Participant',
         trainingTitle: (training && training.title) ? training.title : 'Training Title',
         certCode: 'TGH-PREVIEW-001',
-        bodyText: certBodyText || 'Certificate content goes here...',
+        bodyText: certBodyText || '...',
         trainerName: (training && training.trainers && training.trainers.full_name) ? training.trainers.full_name : 'Trainer Name',
-        pmName: certPmName || 'Project Manager Name',
+        pmName: certPmName || 'PM Name',
         pmTitle: certPmTitle || 'Project Manager',
         date: new Date().toLocaleDateString('en-GB'),
-        logoDonor: donorLogo || '', 
-        logoNgo: ngoLogo || '',
-        qrCode: '' 
+        logoDonor: donorLogo, 
+        logoNgo: ngoLogo,
+        qrCode: transparentPixel 
       });
 
       const out = docx.getZip().generate({ type: 'blob' });
