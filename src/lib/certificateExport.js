@@ -80,11 +80,11 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
 
         <!-- Title + Name Block -->
         <div style="width:72%;text-align:center;margin-bottom:20px;">
-          <h1 style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-style:${isAr ? 'normal' : 'italic'};font-size:${isAr ? '46px' : '40px'};
+          <h1 style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-style:${isAr ? 'normal' : 'italic'};font-size:${isAr ? '52px' : '40px'};
             font-weight:700;letter-spacing:0.05em;color:#111;margin:0 0 20px 0;line-height:1.2;">
             ${textTitle}
           </h1>
-          <p style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:22px;font-weight:700;
+          <p style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:${isAr ? '26px' : '22px'};font-weight:700;
             color:#222;margin:0 0 24px 0;">
             ${textSubtitle}
           </p>
@@ -92,7 +92,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
           <!-- Participant Name -->
           <div style="display:inline-block;width:65%;border-bottom:2px dashed #d1d5db;
             padding-bottom:8px;margin-bottom:20px;text-align:center;">
-            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:42px;font-weight:700;
+            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:${isAr ? '52px' : '42px'};font-weight:700;
               color:#f97316;font-style:${isAr ? 'normal' : 'italic'};direction:auto;">
               ${userName}
             </span>
@@ -101,7 +101,7 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
 
         <!-- Body Text -->
         <div style="width:60%;margin-bottom:auto;">
-          <span style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:17px;font-weight:700;
+          <span style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:${isAr ? '20px' : '17px'};font-weight:700;
             color:#222;line-height:1.7;direction:auto;">
             ${bodyText}
           </span>
@@ -114,22 +114,22 @@ export const buildCertHtml = (userName, trainingTitle, certCode, config, qrDataU
           <!-- Trainer Signature -->
           <div style="width:180px;text-align:center;${isAr ? 'margin-right:60px;' : 'margin-left:60px;'}">
             <div style="border-bottom:2px solid #d1d5db;height:52px;margin-bottom:8px;"></div>
-            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:18px;font-style:${isAr ? 'normal' : 'italic'};
+            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:${isAr ? '22px' : '18px'};font-style:${isAr ? 'normal' : 'italic'};
               font-weight:700;color:#222;direction:auto;">
               ${trainerName || '— — —'}
             </span>
-            <div style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:12px;color:#6b7280;
+            <div style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:${isAr ? '14px' : '12px'};color:#6b7280;
               margin-top:4px;letter-spacing:0.05em;">${textTrainer}</div>
           </div>
 
           <!-- PM Signature -->
           <div style="width:180px;text-align:center;${isAr ? 'margin-right:180px;margin-left:auto;' : 'margin-left:180px;margin-right:auto;'}">
             <div style="border-bottom:2px solid #d1d5db;height:52px;margin-bottom:8px;"></div>
-            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:18px;font-style:${isAr ? 'normal' : 'italic'};
+            <span style="font-family:'Playfair Display', 'Aref Ruqaa', serif;font-size:${isAr ? '22px' : '18px'};font-style:${isAr ? 'normal' : 'italic'};
               font-weight:700;color:#222;direction:auto;">
               ${pmName || '— — —'}
             </span>
-            <div style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:12px;color:#6b7280;
+            <div style="font-family:'Open Sans', 'Aref Ruqaa', sans-serif;font-size:${isAr ? '14px' : '12px'};color:#6b7280;
               margin-top:4px;letter-spacing:0.05em;">${finalPmTitle.toUpperCase()}</div>
           </div>
 

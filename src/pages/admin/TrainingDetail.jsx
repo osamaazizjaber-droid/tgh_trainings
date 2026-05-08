@@ -72,6 +72,7 @@ export default function AdminTrainingDetail() {
   const [certBodyText,  setCertBodyText]  = useState(() => localStorage.getItem('cert_body_text')  || 'has participated in the training organized by Triangle Génération Humanitaire (TGH).');
   const [certPmName,    setCertPmName]    = useState(() => localStorage.getItem('cert_pm_name')    || '');
   const [certPmTitle,   setCertPmTitle]   = useState(() => localStorage.getItem('cert_pm_title')   || 'Project Manager');
+  const [certTrainerName, setCertTrainerName] = useState(() => localStorage.getItem('cert_trainer_name') || '');
   const [certLanguage,  setCertLanguage]  = useState(() => localStorage.getItem('cert_language')   || 'en');
 
   // Question form state
@@ -206,7 +207,7 @@ export default function AdminTrainingDetail() {
     bodyText:    certBodyText,
     pmName:      certPmName,
     pmTitle:     certPmTitle,
-    trainerName: training?.trainers?.full_name || '',
+    trainerName: certTrainerName || training?.trainers?.full_name || '',
     language:    certLanguage,
   };
 
@@ -224,7 +225,7 @@ export default function AdminTrainingDetail() {
           bodyText:    certBodyText,
           pmName:      certPmName,
           pmTitle:     certPmTitle,
-          trainerName: training?.trainers?.full_name || '',
+          trainerName: certTrainerName || training?.trainers?.full_name || '',
           language:    certLanguage,
         },
         null
@@ -242,7 +243,7 @@ export default function AdminTrainingDetail() {
     if (tab === 'certificates' && training) {
       refreshPreview();
     }
-  }, [tab, training, certLanguage]);
+  }, [tab, training, certLanguage, certTrainerName]);
 
   const saveQuestion = async () => {
     if (!qText.trim()) return;
@@ -752,6 +753,15 @@ export default function AdminTrainingDetail() {
                     onChange={e => { setCertBodyText(e.target.value); localStorage.setItem('cert_body_text', e.target.value); }}
                     placeholder={certLanguage === 'ar' ? 'لقد شارك في التدريب...' : 'has participated in the training...'}
                     style={{ fontSize: '0.85rem', resize: 'vertical', direction: certLanguage === 'ar' ? 'rtl' : 'ltr' }}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label>Trainer Name</label>
+                  <input 
+                    value={certTrainerName} 
+                    onChange={e => { setCertTrainerName(e.target.value); localStorage.setItem('cert_trainer_name', e.target.value); }} 
+                    placeholder={training?.trainers?.full_name || "e.g. Ali Ahmed"} 
+                    style={{ direction: certLanguage === 'ar' ? 'rtl' : 'ltr' }} 
                   />
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
