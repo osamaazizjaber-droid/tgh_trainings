@@ -354,7 +354,7 @@ export default function AdminTrainingDetail() {
     training.has_pre_test || training.has_post_test ? { key: 'tests', label: `${t('test')} (${testResults.length})` } : null,
     training.has_evaluation ? { key: 'evaluations', label: `${t('evaluation')} (${evaluations.length})` } : null,
     training.has_pre_test || training.has_post_test ? { key: 'questions', label: `${t('questions')} (${questions.length})` } : null,
-    { key: 'certificates', label: `🎓 Certificates (NEW) (${certificates.length})` },
+    { key: 'certificates', label: `🎓 Certificates (${certificates.length})` },
   ].filter(Boolean);
 
   const preQs = questions.filter(q => q.type === 'pre');
@@ -723,12 +723,7 @@ export default function AdminTrainingDetail() {
                     </div>
                   </div>
                 ))}
-                <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>🧑‍🏫 Trainer (auto)</label>
-                  <div style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                    {training?.trainers?.full_name || <em style={{ color: 'var(--text-muted)' }}>No trainer assigned</em>}
-                  </div>
-                </div>
+
               </div>
             </div>
 
@@ -781,7 +776,6 @@ export default function AdminTrainingDetail() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h3 className="card-title">👁 Live Preview</h3>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">v1.2 (7:52 PM)</span>
                 <button className="btn btn-secondary btn-sm" onClick={refreshPreview} disabled={updatingPreview}>
                   <i className="fas fa-sync-alt" /> {updatingPreview ? 'Updating...' : 'Refresh Preview'}
                 </button>
