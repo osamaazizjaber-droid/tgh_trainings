@@ -1,11 +1,11 @@
-import * as htmlToImage from 'html-to-image';
+import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
 /**
- * Professional Assessment Export (Fixed for Size and Reliability)
- * - Uses JPEG for 10x smaller file size (avoiding 22MB)
- * - Improved rendering reliability to fix the "blank page" issue
- * - One-page continuous layout (Continuous Paper)
+ * Robust Assessment Export
+ * - Uses html2canvas for better cross-origin image support (Supabase logos)
+ * - Compressed JPEG for small file size
+ * - Continuous single-page layout
  */
 export const exportStudentTestPdf = async (student, training, questions, answers) => {
   const prePct = student.pre_max > 0 ? Math.round((student.pre_score / student.pre_max) * 100) : 0;
@@ -97,11 +97,11 @@ export const exportStudentTestPdf = async (student, training, questions, answers
   };
 
   const container = document.createElement('div');
-  // Use opacity 0 and absolute positioning to keep it in rendering flow but invisible
+  container.id = 'pdf-export-container';
   container.style.cssText = `
-    position:absolute; top:0; left:0; width:850px; background:#fff;
+    position:absolute; top:-9999px; left:0; width:850px; background:#fff;
     padding:50px; color:${C.text}; box-sizing:border-box;
-    font-family:${fontStack}; z-index:-1; opacity:0; pointer-events:none;
+    font-family:${fontStack}; z-index:-1;
   `;
 
   const leftLogo  = training?.cert_config?.leftLogo  || null;
@@ -111,7 +111,6 @@ export const exportStudentTestPdf = async (student, training, questions, answers
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Playfair+Display:wght@700&family=Open+Sans:wght@400;600;700;800&display=swap');
     </style>
-
     <div style="position:relative;">
       <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid ${C.primary}; padding-bottom:15px; margin-bottom:30px;">
         <div style="display:flex; align-items:center; gap:20px;">
@@ -154,20 +153,27 @@ export const exportStudentTestPdf = async (student, training, questions, answers
   document.body.appendChild(container);
 
   try {
-    // Wait for fonts and images to load
+    // Wait for fonts and all images to load properly
     await document.fonts.ready;
-    await new Promise(r => setTimeout(r, 800));
+    const images = container.getElementsByTagName('img');
+    await Promise.all([...images].map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(r => { img.onload = r; img.onerror = r; });
+    }));
+    await new Promise(r => setTimeout(r, 500));
 
-    // toJpeg is significantly smaller than toPng (often 10x smaller)
-    const imgData = await htmlToImage.toJpeg(container, {
-      quality: 0.85,
-      pixelRatio: 2, // 2 is perfect balance for quality vs size
-      backgroundColor: '#ffffff'
+    // html2canvas is more robust with cross-origin images (useCORS: true)
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      allowTaint: true
     });
 
-    const rect = container.getBoundingClientRect();
+    const imgData = canvas.toDataURL('image/jpeg', 0.85);
     const pdfW = 210;
-    const pdfH = (rect.height * pdfW) / rect.width;
+    const pdfH = (canvas.height * pdfW) / canvas.width;
 
     const pdf = new jsPDF({
       orientation: 'p',
@@ -175,12 +181,10 @@ export const exportStudentTestPdf = async (student, training, questions, answers
       format: [pdfW, pdfH]
     });
 
-    // 'FAST' compression and JPEG format keep file size tiny
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH, undefined, 'FAST');
     pdf.save(`Results_${(student.user_name || 'student').replace(/\s+/g, '_')}.pdf`);
   } catch (err) {
     console.error('PDF Export Error:', err);
-    alert('PDF Generation failed. Please try again.');
   } finally {
     document.body.removeChild(container);
   }
