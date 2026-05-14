@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { format } from 'date-fns';
+import { buildCertHtml, generateSingleCertificatePdf } from '../../lib/certificateExport';
 
 export default function VerifyCertificate() {
   const [params] = useSearchParams();
@@ -9,6 +10,8 @@ export default function VerifyCertificate() {
   const [loading, setLoading] = useState(true);
   const [certificate, setCertificate] = useState(null);
   const [error, setError] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const previewRef = useRef(null);
 
   useEffect(() => {
     if (!code) {
@@ -26,7 +29,7 @@ export default function VerifyCertificate() {
         .select(`
           id, certificate_code, issued_at,
           users (first_name, second_name, third_name, fourth_name),
-          trainings (title, days_count, activities(name, projects(name)))
+          trainings (title, days_count, activities(name, projects(name)), trainers(full_name))
         `)
         .eq('certificate_code', certCode)
         .maybeSingle();
@@ -42,6 +45,39 @@ export default function VerifyCertificate() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (certificate && previewRef.current) {
+      const userName = [certificate.users?.first_name, certificate.users?.second_name, certificate.users?.third_name, certificate.users?.fourth_name].filter(Boolean).join(' ');
+      const html = buildCertHtml(
+        userName,
+        certificate.trainings?.title || '',
+        certificate.certificate_code,
+        { trainerName: certificate.trainings?.trainers?.full_name || '' },
+        null
+      );
+      previewRef.current.innerHTML = html;
+    }
+  }, [certificate]);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const userName = [certificate.users?.first_name, certificate.users?.second_name, certificate.users?.third_name, certificate.users?.fourth_name].filter(Boolean).join(' ');
+      await generateSingleCertificatePdf(
+        userName,
+        certificate.trainings?.title || '',
+        certificate.certificate_code,
+        window.location.origin,
+        { trainerName: certificate.trainings?.trainers?.full_name || '' }
+      );
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate PDF');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -132,6 +168,24 @@ export default function VerifyCertificate() {
                     {format(new Date(certificate.issued_at), 'dd MMM yyyy')}
                   </div>
                 </div>
+              </div>
+
+              <div style={{ marginTop: 20, textAlign: 'center' }}>
+                <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: 12 }}>Certificate Preview</h3>
+                <div style={{ width: '100%', overflow: 'hidden', display: 'flex', justifyContent: 'center', background: '#f3f4f6', padding: '16px 0', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                  <div style={{ transformOrigin: 'top center', transform: 'scale(0.38)', width: 1123, height: 794, marginBottom: '-492px' }}>
+                    <div ref={previewRef} style={{ boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }} />
+                  </div>
+                </div>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ width: '100%', marginTop: 24, padding: '12px', fontSize: '1.1rem' }}
+                  onClick={handleDownload}
+                  disabled={downloading}
+                >
+                  {downloading ? <span className="spinner spinner-sm" style={{ marginRight: 8 }}></span> : '⬇'} 
+                  {downloading ? 'Generating PDF...' : 'Download PDF Certificate'}
+                </button>
               </div>
 
             </div>

@@ -176,8 +176,8 @@ export function TestPage({ testType }) {
             {questions.map((q, i) => (
               <div key={q.id} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <p style={{ fontWeight: 600, lineHeight: 1.5, flex: 1 }}>
-                    {i + 1}. {q.question_text}
+                  <p style={{ fontWeight: 600, lineHeight: 1.5, flex: 1, direction: language === 'ar' && q.question_text_ar ? 'rtl' : 'ltr' }}>
+                    {i + 1}. {language === 'ar' ? (q.question_text_ar || q.question_text) : q.question_text}
                   </p>
                   <span className="badge badge-purple" style={{ marginRight: 8, flexShrink: 0 }}>{q.points} {t('points')}</span>
                 </div>
@@ -197,7 +197,9 @@ export function TestPage({ testType }) {
                             onChange={() => handleSelect(q.id, c.id)}
                             style={{ accentColor: 'var(--primary)', width: 16, height: 16 }}
                           />
-                          <span style={{ fontSize: '0.9rem' }}>{c.choice_text}</span>
+                          <span style={{ fontSize: '0.9rem', direction: language === 'ar' && c.choice_text_ar ? 'rtl' : 'ltr' }}>
+                            {language === 'ar' ? (c.choice_text_ar || c.choice_text) : c.choice_text}
+                          </span>
                         </label>
                       );
                     })}

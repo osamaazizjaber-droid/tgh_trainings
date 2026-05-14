@@ -205,3 +205,40 @@ export const generateCertificatesPdf = async (
   const projName = training.activities?.projects?.name || 'GEN';
   pdf.save(`Certificates_${projName}_${training.title.replace(/\s+/g, '_')}.pdf`);
 };
+
+/**
+ * Generates and downloads a single certificate PDF.
+ */
+export const generateSingleCertificatePdf = async (
+  userName, trainingTitle, certCode, baseUrl, config = {}
+) => {
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  const verifyUrl = `${baseUrl}/verify?code=${certCode}`;
+  let qrDataUrl = null;
+  try { qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 180 }); } catch (_) {}
+
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;';
+  container.innerHTML = buildCertHtml(
+    userName, trainingTitle, certCode, config, qrDataUrl
+  );
+  document.body.appendChild(container);
+
+  // Wait for fonts to load
+  await document.fonts.ready;
+  await new Promise(r => setTimeout(r, 300));
+
+  try {
+    const imgData = await htmlToImage.toPng(container.firstElementChild, {
+      pixelRatio: 2,
+      width: 1123,
+      height: 794,
+    });
+    pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
+  } finally {
+    document.body.removeChild(container);
+  }
+
+  pdf.save(`Certificate_${certCode}.pdf`);
+};

@@ -77,11 +77,11 @@ export default function AdminTrainingDetail() {
 
   // Question form state
   const [showQForm, setShowQForm] = useState(false);
-  const [qType, setQType] = useState('pre');
   const [qText, setQText] = useState('');
+  const [qTextAr, setQTextAr] = useState('');
   const [qKind, setQKind] = useState('mcq');
   const [qPoints, setQPoints] = useState(1);
-  const [choices, setChoices] = useState([{ text: '', correct: false }, { text: '', correct: false }]);
+  const [choices, setChoices] = useState([{ text: '', textAr: '', correct: false }, { text: '', textAr: '', correct: false }]);
   const [savingQ, setSavingQ] = useState(false);
 
   useEffect(() => { fetchAll(); }, [id]);
@@ -248,29 +248,61 @@ export default function AdminTrainingDetail() {
   const saveQuestion = async () => {
     if (!qText.trim()) return;
     setSavingQ(true);
-    const { data: newQ } = await supabase.from('questions').insert({
-      training_id: id, type: qType, question_text: qText,
-      question_type: qKind, points: qPoints,
-      order_num: questions.filter(q => q.type === qType).length,
-    }).select().single();
 
-    if (qKind === 'mcq' && newQ) {
-      const validChoices = choices.filter(c => c.text.trim());
-      if (validChoices.length) {
-        await supabase.from('choices').insert(validChoices.map(c => ({
-          question_id: newQ.id, choice_text: c.text, is_correct: c.correct,
-        })));
+    const qsToInsert = [];
+    if (training.has_pre_test) {
+      qsToInsert.push({
+        training_id: id, type: 'pre', question_text: qText, question_text_ar: qTextAr,
+        question_type: qKind, points: qPoints,
+        order_num: questions.filter(q => q.type === 'pre').length,
+      });
+    }
+    if (training.has_post_test) {
+      qsToInsert.push({
+        training_id: id, type: 'post', question_text: qText, question_text_ar: qTextAr,
+        question_type: qKind, points: qPoints,
+        order_num: questions.filter(q => q.type === 'post').length,
+      });
+    }
+
+    if (qsToInsert.length > 0) {
+      const { data: newQs } = await supabase.from('questions').insert(qsToInsert).select();
+
+      if (qKind === 'mcq' && newQs && newQs.length > 0) {
+        const validChoices = choices.filter(c => c.text.trim());
+        if (validChoices.length) {
+          const choicesToInsert = [];
+          newQs.forEach(newQ => {
+            validChoices.forEach(c => {
+              choicesToInsert.push({
+                question_id: newQ.id,
+                choice_text: c.text,
+                choice_text_ar: c.textAr,
+                is_correct: c.correct,
+              });
+            });
+          });
+          await supabase.from('choices').insert(choicesToInsert);
+        }
       }
     }
+
     setSavingQ(false);
     setShowQForm(false);
-    setQText(''); setChoices([{ text: '', correct: false }, { text: '', correct: false }]);
+    setQText(''); setQTextAr(''); setChoices([{ text: '', textAr: '', correct: false }, { text: '', textAr: '', correct: false }]);
     fetchAll();
   };
 
   const deleteQuestion = async (qId) => {
-    await supabase.from('questions').delete().eq('id', qId);
-    fetchAll();
+    const q = questions.find(x => x.id === qId);
+    if (q) {
+      // Delete both pre and post versions of this question based on its text and order
+      await supabase.from('questions').delete()
+        .eq('training_id', id)
+        .eq('question_text', q.question_text)
+        .eq('order_num', q.order_num);
+      fetchAll();
+    }
   };
 
   const attendanceByUser = attendance.reduce((acc, a) => {
@@ -348,13 +380,16 @@ export default function AdminTrainingDetail() {
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>;
   if (!training) return <div className="page-container"><p>{t('error')}</p></div>;
 
+  const isAdmin = !localStorage.getItem('trainer_id');
+  const uniqueQuestions = [...new Map(questions.map(q => [q.question_text, q])).values()];
+
   const tabs = [
     { key: 'overview', label: t('features') },
     { key: 'attendance', label: `${t('attendance')} (${attendance.length})` },
     training.has_pre_test || training.has_post_test ? { key: 'tests', label: `${t('test')} (${testResults.length})` } : null,
     training.has_evaluation ? { key: 'evaluations', label: `${t('evaluation')} (${evaluations.length})` } : null,
-    training.has_pre_test || training.has_post_test ? { key: 'questions', label: `${t('questions')} (${questions.length})` } : null,
-    { key: 'certificates', label: `🎓 Certificates (${certificates.length})` },
+    training.has_pre_test || training.has_post_test ? { key: 'questions', label: `${t('questions')} (${uniqueQuestions.length})` } : null,
+    isAdmin ? { key: 'certificates', label: `🎓 Certificates (${certificates.length})` } : null,
   ].filter(Boolean);
 
   const preQs = questions.filter(q => q.type === 'pre');
@@ -658,42 +693,44 @@ export default function AdminTrainingDetail() {
             <button className="btn btn-primary" onClick={() => setShowQForm(true)}>+ Add Question</button>
           </div>
 
-          {['pre', 'post'].map(type => (
-            (type === 'pre' && training.has_pre_test) || (type === 'post' && training.has_post_test)
-          ) && (
-            <div key={type} className="card">
-              <h3 className="card-title" style={{ marginBottom: 16, textTransform: 'capitalize' }}>
-                {type === 'pre' ? 'Pre-Test' : 'Post-Test'} Questions
-                <span style={{ marginLeft: 8, fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>
-                  (Total: {questions.filter(q=>q.type===type).reduce((s,q)=>s+q.points,0)} pts)
-                </span>
-              </h3>
-              {questions.filter(q => q.type === type).length === 0 ? (
-                <p className="text-muted">No questions yet.</p>
-              ) : (
-                questions.filter(q => q.type === type).map((q, i) => (
-                  <div key={q.id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 10 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div className="card">
+            <h3 className="card-title" style={{ marginBottom: 16 }}>
+              Pre & Post Test Questions
+              <span style={{ marginLeft: 8, fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>
+                (Total: {uniqueQuestions.reduce((s,q)=>s+(q.points||0),0)} pts)
+              </span>
+            </h3>
+            {uniqueQuestions.length === 0 ? (
+              <p className="text-muted">No questions yet.</p>
+            ) : (
+              uniqueQuestions.map((q, i) => (
+                <div key={q.id} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span style={{ fontWeight: 600 }}>Q{i + 1}. {q.question_text}</span>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        <span className="badge badge-purple">{q.points} pt{q.points !== 1 ? 's' : ''}</span>
-                        <span className="badge badge-gray">{q.question_type.toUpperCase()}</span>
-                        <button className="btn btn-danger btn-sm" onClick={() => deleteQuestion(q.id)}>✕</button>
+                      {q.question_text_ar && <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', direction: 'rtl' }}>{q.question_text_ar}</span>}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                      <span className="badge badge-purple">{q.points} pt{q.points !== 1 ? 's' : ''}</span>
+                      <span className="badge badge-gray">{q.question_type.toUpperCase()}</span>
+                      <button className="btn btn-danger btn-sm" onClick={() => deleteQuestion(q.id)}>✕</button>
+                    </div>
+                  </div>
+                  {q.choices?.map(c => (
+                    <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: '0.85rem' }}>
+                      <span style={{ color: c.is_correct ? 'var(--success)' : 'var(--text-muted)' }}>
+                        {c.is_correct ? '✓' : '○'}
+                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ color: c.is_correct ? 'var(--success)' : 'var(--text-secondary)' }}>{c.choice_text}</span>
+                        {c.choice_text_ar && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', direction: 'rtl' }}>{c.choice_text_ar}</span>}
                       </div>
                     </div>
-                    {q.choices?.map(c => (
-                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: '0.85rem' }}>
-                        <span style={{ color: c.is_correct ? 'var(--success)' : 'var(--text-muted)' }}>
-                          {c.is_correct ? '✓' : '○'}
-                        </span>
-                        <span style={{ color: c.is_correct ? 'var(--success)' : 'var(--text-secondary)' }}>{c.choice_text}</span>
-                      </div>
-                    ))}
-                  </div>
-                ))
-              )}
-            </div>
-          ))}
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 
@@ -869,14 +906,7 @@ export default function AdminTrainingDetail() {
               <button className="btn btn-ghost btn-icon" onClick={() => setShowQForm(false)}>✕</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px', gap: 12 }}>
-                <div className="form-group">
-                  <label>Test Type</label>
-                  <select value={qType} onChange={e => setQType(e.target.value)}>
-                    {training.has_pre_test && <option value="pre">Pre-Test</option>}
-                    {training.has_post_test && <option value="post">Post-Test</option>}
-                  </select>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 12 }}>
                 <div className="form-group">
                   <label>Question Type</label>
                   <select value={qKind} onChange={e => setQKind(e.target.value)}>
@@ -889,9 +919,15 @@ export default function AdminTrainingDetail() {
                   <input type="number" min={1} max={10} value={qPoints} onChange={e => setQPoints(parseInt(e.target.value))} />
                 </div>
               </div>
-              <div className="form-group">
-                <label>Question Text *</label>
-                <textarea value={qText} onChange={e => setQText(e.target.value)} placeholder="Enter your question..." rows={3} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="form-group">
+                  <label>Question Text (English) *</label>
+                  <textarea value={qText} onChange={e => setQText(e.target.value)} placeholder="Enter question in English..." rows={3} />
+                </div>
+                <div className="form-group">
+                  <label>Question Text (Arabic)</label>
+                  <textarea value={qTextAr} onChange={e => setQTextAr(e.target.value)} placeholder="السؤال بالعربية..." rows={3} style={{ direction: 'rtl' }} />
+                </div>
               </div>
               {qKind === 'mcq' && (
                 <div>
@@ -910,8 +946,14 @@ export default function AdminTrainingDetail() {
                       <input
                         value={c.text}
                         onChange={e => setChoices(choices.map((x, j) => j === i ? { ...x, text: e.target.value } : x))}
-                        placeholder={`Choice ${i + 1}`}
+                        placeholder={`EN Choice ${i + 1}`}
                         style={{ flex: 1 }}
+                      />
+                      <input
+                        value={c.textAr || ''}
+                        onChange={e => setChoices(choices.map((x, j) => j === i ? { ...x, textAr: e.target.value } : x))}
+                        placeholder={`AR Choice ${i + 1}`}
+                        style={{ flex: 1, direction: 'rtl' }}
                       />
                       {choices.length > 2 && (
                         <button className="btn btn-danger btn-sm btn-icon" onClick={() => setChoices(choices.filter((_, j) => j !== i))}>✕</button>
@@ -919,7 +961,7 @@ export default function AdminTrainingDetail() {
                     </div>
                   ))}
                   <button className="btn btn-ghost btn-sm" style={{ marginTop: 10 }}
-                    onClick={() => setChoices([...choices, { text: '', correct: false }])}>
+                    onClick={() => setChoices([...choices, { text: '', textAr: '', correct: false }])}>
                     + Add Choice
                   </button>
                 </div>
