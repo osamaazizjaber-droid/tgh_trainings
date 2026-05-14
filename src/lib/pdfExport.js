@@ -41,7 +41,7 @@ export const exportStudentTestPdf = async (student, training, questions, answers
           color:${result.includes('Correct') ? '#16a34a' : result.includes('Wrong') ? '#dc2626' : '#6b7280'};">
           ${result}
         </td>
-        <td style="padding:10px 8px; font-size:12px; text-align:center; font-weight:700; color:#4f46e5;">
+        <td style="padding:10px 8px; font-size:12px; text-align:center; font-weight:700; color:#f97316;">
           ${earned}
         </td>
       </tr>`;
@@ -56,13 +56,20 @@ export const exportStudentTestPdf = async (student, training, questions, answers
     padding: 40px; color: #111827; box-sizing: border-box;
   `;
 
+  const leftLogo = training?.cert_config?.leftLogo || null;
+  const rightLogo = training?.cert_config?.rightLogo || '/logo.png';
+
   container.innerHTML = `
-    <div style="display:flex; align-items:center; gap:16px; border-bottom:3px solid #4f46e5; padding-bottom:18px; margin-bottom:24px;">
-      <div>
-        <div style="font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">TGH Trainings Center</div>
-        <h1 style="margin:0; font-size:20px; color:#4f46e5;">Test Results</h1>
-        <h2 style="margin:4px 0 0; font-size:15px; color:#1f2937;" dir="auto">${training.title}</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #f97316; padding-bottom:18px; margin-bottom:24px;">
+      <div style="display:flex; align-items:center; gap:20px;">
+        ${leftLogo ? `<img src="${leftLogo}" style="max-height:60px; max-width:140px; object-fit:contain;" />` : ''}
+        <div>
+          <div style="font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">TGH Trainings Center</div>
+          <h1 style="margin:0; font-size:22px; color:#f97316;">Assessment Results</h1>
+          <h2 style="margin:4px 0 0; font-size:15px; color:#1f2937;" dir="auto">${training.title}</h2>
+        </div>
       </div>
+      ${rightLogo ? `<img src="${rightLogo}" style="max-height:60px; max-width:140px; object-fit:contain;" />` : ''}
     </div>
 
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; background:#f3f4f6; border-radius:10px; padding:18px; margin-bottom:24px;">
@@ -76,17 +83,17 @@ export const exportStudentTestPdf = async (student, training, questions, answers
       </div>
       <div>
         <div style="font-size:10px; color:#9ca3af; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.05em;">Pre-Test Score</div>
-        <div style="font-size:16px; font-weight:700; color:#4f46e5;">${student.pre_score} / ${student.pre_max} <span style="font-size:12px; color:#6b7280;">(${prePct}%)</span></div>
+        <div style="font-size:16px; font-weight:700; color:#f97316;">${student.pre_score} / ${student.pre_max} <span style="font-size:12px; color:#6b7280;">(${prePct}%)</span></div>
       </div>
       <div>
         <div style="font-size:10px; color:#9ca3af; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.05em;">Post-Test Score</div>
-        <div style="font-size:16px; font-weight:700; color:#4f46e5;">${student.post_score} / ${student.post_max} <span style="font-size:12px; color:#6b7280;">(${postPct}%)</span></div>
+        <div style="font-size:16px; font-weight:700; color:#f97316;">${student.post_score} / ${student.post_max} <span style="font-size:12px; color:#6b7280;">(${postPct}%)</span></div>
       </div>
     </div>
 
     <table style="width:100%; border-collapse:collapse; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
       <thead>
-        <tr style="background:#4f46e5; color:white;">
+        <tr style="background:#1f2937; color:white; border-bottom:3px solid #f97316;">
           <th style="padding:10px 8px; text-align:left;  font-size:12px; width:38%;">Question</th>
           <th style="padding:10px 8px; text-align:left;  font-size:12px; width:36%;">Student Answer</th>
           <th style="padding:10px 8px; text-align:center;font-size:12px; width:13%;">Result</th>
