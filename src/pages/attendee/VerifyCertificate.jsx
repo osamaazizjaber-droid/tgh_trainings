@@ -59,14 +59,16 @@ export default function VerifyCertificate() {
       const localPmTitle = localStorage.getItem('cert_pm_title');
       const localLanguage = localStorage.getItem('cert_language');
 
+      const dbConfig = certificate.trainings?.cert_config || {};
+
       const config = {
-        trainerName: certificate.trainings?.trainers?.full_name || '',
-        bodyText: localBodyText || `has participated in the training organized by Triangle Génération Humanitaire (TGH). Training Topic: ${certificate.trainings?.title || ''}`,
-        leftLogo: localLeftLogo || null,
-        rightLogo: localRightLogo || '/logo.png',
-        pmName: localPmName || '',
-        pmTitle: localPmTitle || 'Project Manager',
-        language: localLanguage || 'en'
+        trainerName: dbConfig.trainerName !== undefined ? dbConfig.trainerName : (certificate.trainings?.trainers?.full_name || ''),
+        bodyText: dbConfig.bodyText !== undefined ? dbConfig.bodyText : (localBodyText || `has participated in the training organized by Triangle Génération Humanitaire (TGH). Training Topic: ${certificate.trainings?.title || ''}`),
+        leftLogo: dbConfig.leftLogo !== undefined ? dbConfig.leftLogo : (localLeftLogo || null),
+        rightLogo: dbConfig.rightLogo !== undefined ? dbConfig.rightLogo : (localRightLogo || '/logo.png'),
+        pmName: dbConfig.pmName !== undefined ? dbConfig.pmName : (localPmName || ''),
+        pmTitle: dbConfig.pmTitle !== undefined ? dbConfig.pmTitle : (localPmTitle || 'Project Manager'),
+        language: dbConfig.language !== undefined ? dbConfig.language : (localLanguage || 'en')
       };
 
       const html = buildCertHtml(
@@ -92,14 +94,16 @@ export default function VerifyCertificate() {
       const localPmTitle = localStorage.getItem('cert_pm_title');
       const localLanguage = localStorage.getItem('cert_language');
 
+      const dbConfig = certificate.trainings?.cert_config || {};
+
       const config = {
-        trainerName: certificate.trainings?.trainers?.full_name || '',
-        bodyText: localBodyText || `has participated in the training organized by Triangle Génération Humanitaire (TGH). Training Topic: ${certificate.trainings?.title || ''}`,
-        leftLogo: localLeftLogo || null,
-        rightLogo: localRightLogo || '/logo.png',
-        pmName: localPmName || '',
-        pmTitle: localPmTitle || 'Project Manager',
-        language: localLanguage || 'en'
+        trainerName: dbConfig.trainerName !== undefined ? dbConfig.trainerName : (certificate.trainings?.trainers?.full_name || ''),
+        bodyText: dbConfig.bodyText !== undefined ? dbConfig.bodyText : (localBodyText || `has participated in the training organized by Triangle Génération Humanitaire (TGH). Training Topic: ${certificate.trainings?.title || ''}`),
+        leftLogo: dbConfig.leftLogo !== undefined ? dbConfig.leftLogo : (localLeftLogo || null),
+        rightLogo: dbConfig.rightLogo !== undefined ? dbConfig.rightLogo : (localRightLogo || '/logo.png'),
+        pmName: dbConfig.pmName !== undefined ? dbConfig.pmName : (localPmName || ''),
+        pmTitle: dbConfig.pmTitle !== undefined ? dbConfig.pmTitle : (localPmTitle || 'Project Manager'),
+        language: dbConfig.language !== undefined ? dbConfig.language : (localLanguage || 'en')
       };
 
       await generateSingleCertificatePdf(

@@ -74,6 +74,19 @@ export default function AdminTrainingDetail() {
   const [certPmTitle,   setCertPmTitle]   = useState(() => localStorage.getItem('cert_pm_title')   || 'Project Manager');
   const [certTrainerName, setCertTrainerName] = useState(() => localStorage.getItem('cert_trainer_name') || '');
   const [certLanguage,  setCertLanguage]  = useState(() => localStorage.getItem('cert_language')   || 'en');
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  useEffect(() => {
+    if (training?.cert_config) {
+      if (training.cert_config.leftLogo !== undefined) setCertLeftLogo(training.cert_config.leftLogo);
+      if (training.cert_config.rightLogo !== undefined) setCertRightLogo(training.cert_config.rightLogo);
+      if (training.cert_config.bodyText !== undefined) setCertBodyText(training.cert_config.bodyText);
+      if (training.cert_config.pmName !== undefined) setCertPmName(training.cert_config.pmName);
+      if (training.cert_config.pmTitle !== undefined) setCertPmTitle(training.cert_config.pmTitle);
+      if (training.cert_config.trainerName !== undefined) setCertTrainerName(training.cert_config.trainerName);
+      if (training.cert_config.language !== undefined) setCertLanguage(training.cert_config.language);
+    }
+  }, [training]);
 
   // Question form state
   const [showQForm, setShowQForm] = useState(false);
@@ -236,6 +249,23 @@ export default function AdminTrainingDetail() {
       previewRef.current.innerHTML = `<div style="padding:20px;color:red;">❌ ${err.message}</div>`;
     } finally {
       setUpdatingPreview(false);
+    }
+  };
+
+  const saveCertSettings = async () => {
+    setSavingSettings(true);
+    const { error } = await supabase.from('trainings').update({ cert_config: certConfig }).eq('id', id);
+    setSavingSettings(false);
+    if (error) {
+      if (error.message?.includes('cert_config') || String(error.code) === '42703') {
+        alert("Database Error: Please run the SQL command to add 'cert_config' column: ALTER TABLE trainings ADD COLUMN cert_config jsonb;");
+      } else {
+        alert("Error saving settings: " + error.message);
+      }
+    } else {
+      alert("Certificate settings saved successfully! Attendees will now see this exact design.");
+      // update local training object
+      setTraining(t => ({ ...t, cert_config: certConfig }));
     }
   };
 
@@ -815,6 +845,9 @@ export default function AdminTrainingDetail() {
               <div className="flex items-center gap-2">
                 <button className="btn btn-secondary btn-sm" onClick={refreshPreview} disabled={updatingPreview}>
                   <i className="fas fa-sync-alt" /> {updatingPreview ? 'Updating...' : 'Refresh Preview'}
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={saveCertSettings} disabled={savingSettings}>
+                  💾 {savingSettings ? 'Saving...' : 'Save Settings to DB'}
                 </button>
               </div>
             </div>
