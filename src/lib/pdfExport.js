@@ -6,43 +6,68 @@ export const exportStudentTestPdf = async (student, training, questions, answers
   const postPct = student.post_max > 0 ? Math.round((student.post_score / student.post_max) * 100) : 0;
 
   // Build table rows
-  const rows = questions.map((q, i) => {
-    const ans   = answers.find(a => a.question_id === q.id);
-    const isMCQ = q.question_type === 'mcq';
+    const isCorrect = isMCQ ? (ans && !!ans.choices?.is_correct) : (ans && ans.manual_score === q.points);
+    const statusColor = isCorrect ? '#16a34a' : (ans ? '#dc2626' : '#9ca3af');
+    const statusLabel = isCorrect ? 'CORRECT' : (ans ? 'INCORRECT' : 'UNANSWERED');
+    const statusIcon  = isCorrect ? '✓' : (ans ? '✕' : '—');
 
-    let studentAnswer = 'No Answer';
-    let result        = '—';
-    let earned        = `— / ${q.points}`;
+    let choiceFeedback = '';
+    if (isMCQ && q.choices) {
+      choiceFeedback = `<div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">` + 
+        q.choices.map(c => {
+          const isStudentPick = ans?.choice_id === c.id;
+          const isRightChoice = c.is_correct;
+          let border = '#e5e7eb';
+          let bg = '#fff';
+          let icon = '○';
+          let color = '#374151';
 
-    if (ans) {
-      if (isMCQ) {
-        studentAnswer = ans.choices?.choice_text || 'No Answer';
-        const isCorrect = !!ans.choices?.is_correct;
-        result  = isCorrect ? '✓ Correct' : '✗ Wrong';
-        earned  = `${isCorrect ? q.points : 0} / ${q.points}`;
-      } else {
-        studentAnswer = ans.answer_text || 'No Answer';
-        result  = '—';
-        earned  = ans.manual_score != null
-          ? `${ans.manual_score} / ${q.points}`
-          : `Ungraded / ${q.points}`;
-      }
+          if (isRightChoice) {
+            border = '#16a34a';
+            bg = '#f0fdf4';
+            icon = '●';
+            color = '#166534';
+          } else if (isStudentPick) {
+            border = '#dc2626';
+            bg = '#fef2f2';
+            icon = '●';
+            color = '#991b1b';
+          }
+
+          return `
+            <div style="display:flex; align-items:center; gap:8px; padding:5px 10px; border-radius:6px; border:1px solid ${border}; background:${bg}; font-size:10px; color:${color};">
+              <span style="font-size:12px;">${icon}</span>
+              ${c.choice_text}
+              ${isStudentPick ? '<span style="margin-left:auto; font-size:9px; font-weight:700; opacity:0.7;">(YOUR ANSWER)</span>' : ''}
+            </div>`;
+        }).join('') + `</div>`;
     }
 
-    const rowBg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
     return `
-      <tr style="background:${rowBg}; border-bottom:1px solid #e5e7eb;">
-        <td style="padding:10px 8px; font-size:12px; line-height:1.5;" dir="auto">
-          <span style="color:#6b7280; font-size:10px; font-weight:600;">${isMCQ ? 'MCQ' : 'OPEN'}</span><br/>
-          ${i + 1}. ${q.question_text}
+      <tr style="border-bottom:1px solid #e5e7eb;">
+        <td style="padding:16px 12px; vertical-align:top; width:50%;" dir="auto">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span style="background:#f3f4f6; color:#6b7280; font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; text-transform:uppercase;">${isMCQ ? 'Multiple Choice' : 'Open Question'}</span>
+            <span style="color:#9ca3af; font-size:11px;">#${i + 1}</span>
+          </div>
+          <div style="font-size:13px; font-weight:600; color:#111827; line-height:1.4;">${q.question_text}</div>
+          ${choiceFeedback}
+          ${!isMCQ && ans ? `<div style="margin-top:10px; padding:10px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb; font-size:11px; color:#374151;">
+              <div style="font-size:9px; font-weight:700; color:#9ca3af; text-transform:uppercase; margin-bottom:4px;">Your Response:</div>
+              ${ans.answer_text}
+            </div>` : ''}
         </td>
-        <td style="padding:10px 8px; font-size:12px; color:#374151; line-height:1.5;" dir="auto">${studentAnswer}</td>
-        <td style="padding:10px 8px; font-size:11px; text-align:center; font-weight:600;
-          color:${result.includes('Correct') ? '#16a34a' : result.includes('Wrong') ? '#dc2626' : '#6b7280'};">
-          ${result}
+        <td style="padding:16px 12px; vertical-align:top; text-align:center; width:25%;">
+          <div style="display:inline-flex; flex-direction:column; align-items:center; gap:4px;">
+            <div style="width:28px; height:28px; border-radius:50%; background:${statusColor}; color:white; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold;">
+              ${statusIcon}
+            </div>
+            <div style="font-size:9px; font-weight:800; color:${statusColor}; letter-spacing:0.05em;">${statusLabel}</div>
+          </div>
         </td>
-        <td style="padding:10px 8px; font-size:12px; text-align:center; font-weight:700; color:#f97316;">
-          ${earned}
+        <td style="padding:16px 12px; vertical-align:top; text-align:right; width:25%;">
+          <div style="font-size:16px; font-weight:800; color:#111827;">${ans ? (isMCQ ? (isCorrect ? q.points : 0) : (ans.manual_score || 0)) : 0}</div>
+          <div style="font-size:10px; color:#9ca3af; font-weight:600;">OUT OF ${q.points}</div>
         </td>
       </tr>`;
   }).join('');
@@ -91,13 +116,12 @@ export const exportStudentTestPdf = async (student, training, questions, answers
       </div>
     </div>
 
-    <table style="width:100%; border-collapse:collapse; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+    <table style="width:100%; border-collapse:collapse; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; table-layout:fixed;">
       <thead>
         <tr style="background:#1f2937; color:white; border-bottom:3px solid #f97316;">
-          <th style="padding:10px 8px; text-align:left;  font-size:12px; width:38%;">Question</th>
-          <th style="padding:10px 8px; text-align:left;  font-size:12px; width:36%;">Student Answer</th>
-          <th style="padding:10px 8px; text-align:center;font-size:12px; width:13%;">Result</th>
-          <th style="padding:10px 8px; text-align:center;font-size:12px; width:13%;">Points</th>
+          <th style="padding:14px 12px; text-align:left;  font-size:11px; width:50%; text-transform:uppercase; letter-spacing:0.05em;">Question & Feedback</th>
+          <th style="padding:14px 12px; text-align:center;font-size:11px; width:25%; text-transform:uppercase; letter-spacing:0.05em;">Status</th>
+          <th style="padding:14px 12px; text-align:right; font-size:11px; width:25%; text-transform:uppercase; letter-spacing:0.05em;">Score</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
