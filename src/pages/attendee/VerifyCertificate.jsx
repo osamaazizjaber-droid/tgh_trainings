@@ -29,7 +29,7 @@ export default function VerifyCertificate() {
         .select(`
           id, certificate_code, issued_at,
           users (first_name, second_name, third_name, fourth_name),
-          trainings (title, days_count, activities(name, projects(name)), trainers(full_name))
+          trainings (title, days_count, cert_config, activities(name, projects(name)), trainers(full_name))
         `)
         .eq('certificate_code', certCode)
         .maybeSingle();
