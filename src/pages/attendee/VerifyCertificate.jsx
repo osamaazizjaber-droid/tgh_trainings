@@ -51,11 +51,29 @@ export default function VerifyCertificate() {
   useEffect(() => {
     if (certificate && previewRef.current) {
       const userName = [certificate.users?.first_name, certificate.users?.second_name, certificate.users?.third_name, certificate.users?.fourth_name].filter(Boolean).join(' ');
+      
+      const localBodyText = localStorage.getItem('cert_body_text');
+      const localLeftLogo = localStorage.getItem('cert_left_logo');
+      const localRightLogo = localStorage.getItem('cert_right_logo');
+      const localPmName = localStorage.getItem('cert_pm_name');
+      const localPmTitle = localStorage.getItem('cert_pm_title');
+      const localLanguage = localStorage.getItem('cert_language');
+
+      const config = {
+        trainerName: certificate.trainings?.trainers?.full_name || '',
+        bodyText: localBodyText || `has participated in the training organized by Triangle Génération Humanitaire (TGH). Training Topic: ${certificate.trainings?.title || ''}`,
+        leftLogo: localLeftLogo || null,
+        rightLogo: localRightLogo || '/logo.png',
+        pmName: localPmName || '',
+        pmTitle: localPmTitle || 'Project Manager',
+        language: localLanguage || 'en'
+      };
+
       const html = buildCertHtml(
         userName,
         certificate.trainings?.title || '',
         certificate.certificate_code,
-        { trainerName: certificate.trainings?.trainers?.full_name || '' },
+        config,
         null
       );
       previewRef.current.innerHTML = html;
@@ -66,12 +84,30 @@ export default function VerifyCertificate() {
     setDownloading(true);
     try {
       const userName = [certificate.users?.first_name, certificate.users?.second_name, certificate.users?.third_name, certificate.users?.fourth_name].filter(Boolean).join(' ');
+      
+      const localBodyText = localStorage.getItem('cert_body_text');
+      const localLeftLogo = localStorage.getItem('cert_left_logo');
+      const localRightLogo = localStorage.getItem('cert_right_logo');
+      const localPmName = localStorage.getItem('cert_pm_name');
+      const localPmTitle = localStorage.getItem('cert_pm_title');
+      const localLanguage = localStorage.getItem('cert_language');
+
+      const config = {
+        trainerName: certificate.trainings?.trainers?.full_name || '',
+        bodyText: localBodyText || `has participated in the training organized by Triangle Génération Humanitaire (TGH). Training Topic: ${certificate.trainings?.title || ''}`,
+        leftLogo: localLeftLogo || null,
+        rightLogo: localRightLogo || '/logo.png',
+        pmName: localPmName || '',
+        pmTitle: localPmTitle || 'Project Manager',
+        language: localLanguage || 'en'
+      };
+
       await generateSingleCertificatePdf(
         userName,
         certificate.trainings?.title || '',
         certificate.certificate_code,
         window.location.origin,
-        { trainerName: certificate.trainings?.trainers?.full_name || '' }
+        config
       );
     } catch (err) {
       console.error(err);
