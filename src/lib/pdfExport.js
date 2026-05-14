@@ -13,7 +13,7 @@ export const exportStudentTestPdf = async (student, training, questions, answers
 
     let choiceFeedback = '';
     if (isMCQ && q.choices) {
-      choiceFeedback = `<div style="margin-top:8px; display:flex; flex-direction:column; gap:4px;">` + 
+      choiceFeedback = `<div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">` + 
         q.choices.map(c => {
           const isStudentPick = ans?.choice_id === c.id;
           const isRightChoice = c.is_correct;
@@ -35,39 +35,48 @@ export const exportStudentTestPdf = async (student, training, questions, answers
           }
 
           return `
-            <div style="display:flex; align-items:center; gap:8px; padding:5px 10px; border-radius:6px; border:1px solid ${border}; background:${bg}; font-size:10px; color:${color};">
-              <span style="font-size:12px;">${icon}</span>
-              ${c.choice_text}
-              ${isStudentPick ? '<span style="margin-left:auto; font-size:9px; font-weight:700; opacity:0.7;">(YOUR ANSWER)</span>' : ''}
+            <div style="display:flex; flex-direction:column; gap:2px; padding:8px 12px; border-radius:8px; border:1px solid ${border}; background:${bg}; color:${color};">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:14px;">${icon}</span>
+                <span style="font-size:12px; font-weight:600;">${c.choice_text}</span>
+                ${isStudentPick ? '<span style="margin-left:auto; font-size:9px; font-weight:800; text-transform:uppercase; opacity:0.7;">(Student Answer)</span>' : ''}
+              </div>
+              ${c.choice_text_ar ? `<div style="font-size:13px; font-weight:600; text-align:right;" dir="rtl">${c.choice_text_ar}</div>` : ''}
             </div>`;
         }).join('') + `</div>`;
     }
 
     return `
       <tr style="border-bottom:1px solid #e5e7eb;">
-        <td style="padding:16px 12px; vertical-align:top; width:50%;" dir="auto">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-            <span style="background:#f3f4f6; color:#6b7280; font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; text-transform:uppercase;">${isMCQ ? 'Multiple Choice' : 'Open Question'}</span>
-            <span style="color:#9ca3af; font-size:11px;">#${i + 1}</span>
+        <td style="padding:20px 16px; vertical-align:top; width:55%;" dir="auto">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="background:#f97316; color:white; font-size:9px; font-weight:800; padding:3px 8px; border-radius:4px; text-transform:uppercase; letter-spacing:0.05em;">${isMCQ ? 'MCQ' : 'OPEN'}</span>
+            <span style="color:#6b7280; font-size:12px; font-weight:700;">Question #${i + 1}</span>
           </div>
-          <div style="font-size:13px; font-weight:600; color:#111827; line-height:1.4;">${q.question_text}</div>
+          <div style="font-size:15px; font-weight:700; color:#000; line-height:1.4; margin-bottom:4px;">${q.question_text}</div>
+          ${q.question_text_ar ? `<div style="font-size:17px; font-weight:700; color:#000; line-height:1.4; margin-bottom:12px; text-align:right;" dir="rtl">${q.question_text_ar}</div>` : ''}
+          
           ${choiceFeedback}
-          ${!isMCQ && ans ? `<div style="margin-top:10px; padding:10px; background:#f9fafb; border-radius:8px; border:1px solid #e5e7eb; font-size:11px; color:#374151;">
-              <div style="font-size:9px; font-weight:700; color:#9ca3af; text-transform:uppercase; margin-bottom:4px;">Your Response:</div>
-              ${ans.answer_text}
+          
+          ${!isMCQ && ans ? `<div style="margin-top:12px; padding:12px; background:#f9fafb; border-radius:10px; border:1px solid #e5e7eb; font-size:12px; color:#111827;">
+              <div style="font-size:10px; font-weight:800; color:#9ca3af; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.05em;">Participant Response:</div>
+              <div style="font-weight:600;">${ans.answer_text}</div>
             </div>` : ''}
         </td>
-        <td style="padding:16px 12px; vertical-align:top; text-align:center; width:25%;">
-          <div style="display:inline-flex; flex-direction:column; align-items:center; gap:4px;">
-            <div style="width:28px; height:28px; border-radius:50%; background:${statusColor}; color:white; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold;">
+        <td style="padding:20px 12px; vertical-align:top; text-align:center; width:22%;">
+          <div style="display:inline-flex; flex-direction:column; align-items:center; gap:6px; margin-top:8px;">
+            <div style="width:36px; height:36px; border-radius:50%; background:${statusColor}; color:white; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
               ${statusIcon}
             </div>
-            <div style="font-size:9px; font-weight:800; color:${statusColor}; letter-spacing:0.05em;">${statusLabel}</div>
+            <div style="font-size:10px; font-weight:900; color:${statusColor}; letter-spacing:0.05em;">${statusLabel}</div>
           </div>
         </td>
-        <td style="padding:16px 12px; vertical-align:top; text-align:right; width:25%;">
-          <div style="font-size:16px; font-weight:800; color:#111827;">${ans ? (isMCQ ? (isCorrect ? q.points : 0) : (ans.manual_score || 0)) : 0}</div>
-          <div style="font-size:10px; color:#9ca3af; font-weight:600;">OUT OF ${q.points}</div>
+        <td style="padding:20px 16px; vertical-align:top; text-align:right; width:23%;">
+          <div style="margin-top:8px;">
+            <div style="font-size:20px; font-weight:900; color:#111827;">${ans ? (isMCQ ? (isCorrect ? q.points : 0) : (ans.manual_score || 0)) : 0}</div>
+            <div style="font-size:10px; color:#9ca3af; font-weight:700; text-transform:uppercase;">Points Earned</div>
+            <div style="font-size:9px; color:#6b7280; font-weight:600; margin-top:2px;">Out of ${q.points}</div>
+          </div>
         </td>
       </tr>`;
   }).join('');
