@@ -50,11 +50,11 @@ export const exportStudentTestPdf = async (student, training, questions, answers
       <tr style="border-bottom:1px solid #e5e7eb;">
         <td style="padding:20px 16px; vertical-align:top; width:55%;" dir="auto">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="background:#f97316; color:white; font-size:9px; font-weight:800; padding:3px 8px; border-radius:4px; text-transform:uppercase; letter-spacing:0.05em;">${isMCQ ? 'MCQ' : 'OPEN'}</span>
-            <span style="color:#6b7280; font-size:12px; font-weight:700;">Question #${i + 1}</span>
+            <span style="background:#f97316; color:white; font-size:9px; font-weight:900; padding:3px 8px; border-radius:4px; text-transform:uppercase; letter-spacing:0.05em;">${isMCQ ? 'MCQ' : 'OPEN'}</span>
+            <span style="color:#111827; font-size:12px; font-weight:800;">Question #${i + 1}</span>
           </div>
-          <div style="font-size:15px; font-weight:700; color:#000; line-height:1.4; margin-bottom:4px;">${q.question_text}</div>
-          ${q.question_text_ar ? `<div style="font-size:17px; font-weight:700; color:#000; line-height:1.4; margin-bottom:12px; text-align:right;" dir="rtl">${q.question_text_ar}</div>` : ''}
+          <div style="font-size:16px; font-weight:800; color:#000000; line-height:1.4; margin-bottom:4px;">${q.question_text}</div>
+          ${q.question_text_ar ? `<div style="font-size:18px; font-weight:800; color:#000000; line-height:1.4; margin-bottom:12px; text-align:right;" dir="rtl">${q.question_text_ar}</div>` : ''}
           
           ${choiceFeedback}
           
